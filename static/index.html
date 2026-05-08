@@ -1570,7 +1570,18 @@ function showScreen(id){
   if(hdr)hdr.style.display=(id==='day'||id==='month')?'block':'none';
   // init screens
   if(id==='tracker'){updateTracker();renderFoodLog();}
-  if(id==='shop'){curShopTab='my';renderMyShop();}
+  if(id==='shop'){
+    curShopTab='my';
+    const myDiv=document.getElementById('shopMy');
+    const wkDiv=document.getElementById('shopWeekly');
+    if(myDiv)myDiv.style.display='block';
+    if(wkDiv)wkDiv.style.display='none';
+    const t1=document.getElementById('shopTab-my');
+    const t2=document.getElementById('shopTab-weekly');
+    if(t1)t1.classList.add('on');
+    if(t2)t2.classList.remove('on');
+    setTimeout(renderMyShop,50);
+  }
   if(id==='progress'){renderMeasures();updateStats();setTimeout(renderMainChart,50);}
   if(id==='ai'){loadAIHistory();}
   if(id==='menu'){renderMenuDayTabs();renderMenuSlots();renderMenuTotals();}
@@ -1971,6 +1982,18 @@ async function askFridgeSuggest() {
   } catch(e) {
     if (sugEl) sugEl.innerHTML = '<div style="font-size:12px;color:var(--red);padding:10px">⚠️ Ошибка соединения</div>';
   }
+}
+
+function quickAddToShop(name, qty) {
+  const list = getMyShop();
+  list.push({
+    name, qty: qty || '1 шт', price: 0,
+    cat: 'Прочее', checked: false,
+    id: Date.now(),
+    added: new Date().toLocaleDateString('ru')
+  });
+  saveMyShop(list);
+  showToast('🛒 Добавлено в покупки: ' + name, 'green');
 }
 
 function addToFridgeFromSearch(name, qty) {
@@ -2967,18 +2990,29 @@ async function calcShopItemKBZHU() {
     const b = (found.b * mult).toFixed(1);
     const j = (found.j * mult).toFixed(1);
     const u = (found.u * mult).toFixed(1);
+    const fn = found.n, fg = grams;
     if (resultEl) resultEl.innerHTML = `
-      <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${found.n} ${grams}г</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <span style="background:var(--org-d);color:var(--org);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">${kcal} ккал</span>
-        <span style="background:var(--acc-d);color:var(--acc);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Б:${b}г</span>
-        <span style="background:var(--grn-d);color:var(--grn);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Ж:${j}г</span>
-        <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">У:${u}г</span>
+      <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${fn} ${fg}г</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="background:var(--org-d);color:var(--org);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">${kcal} ккал</span>
+        <span style="background:var(--acc-d);color:var(--acc);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Б: ${b}г</span>
+        <span style="background:var(--grn-d);color:var(--grn);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Ж: ${j}г</span>
+        <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">У: ${u}г</span>
       </div>
-      <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${escapeHtml(found.n)}')"
-        style="width:100%;margin-top:8px;padding:6px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
-        + В дневник питания
-      </button>`;
+      <div style="display:flex;gap:6px">
+        <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${fn} ${fg}г')"
+          style="flex:2;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          ＋ В дневник
+        </button>
+        <button onclick="addToFridgeFromSearch('${fn}','${fg}г')"
+          style="flex:1;padding:8px;background:var(--acc-d);border:1.5px solid var(--acc);border-radius:8px;color:var(--acc);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          🧊 Холод.
+        </button>
+        <button onclick="quickAddToShop('${fn}','${fg}г')"
+          style="flex:1;padding:8px;background:var(--grn-d);border:1.5px solid var(--grn);border-radius:8px;color:var(--grn);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          🛒 Купить
+        </button>
+      </div>`;
     return;
   }
 
@@ -2995,18 +3029,29 @@ async function calcShopItemKBZHU() {
     if (data.kcal !== undefined) {
       const kcal = data.kcal, b = data.protein, j = data.fat, u = data.carbs;
       const source = data.source === 'ai' ? '🤖 ИИ' : '📚 База';
+      const nm = name, gr = grams;
       if (resultEl) resultEl.innerHTML = `
-        <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${escapeHtml(name)} ${grams}г <span style="font-size:10px;color:var(--txt3);font-weight:600">${source}</span></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${escapeHtml(nm)} ${gr}г <span style="font-size:10px;color:var(--txt3);font-weight:600">${source}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           <span style="background:var(--org-d);color:var(--org);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">${kcal} ккал</span>
           <span style="background:var(--acc-d);color:var(--acc);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Б: ${b}г</span>
           <span style="background:var(--grn-d);color:var(--grn);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Ж: ${j}г</span>
           <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">У: ${u}г</span>
         </div>
-        <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${escapeHtml(name)} ${grams}г')"
-          style="width:100%;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
-          ＋ В дневник питания
-        </button>`;
+        <div style="display:flex;gap:6px">
+          <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${escapeHtml(nm)} ${gr}г')"
+            style="flex:2;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+            ＋ В дневник
+          </button>
+          <button onclick="addToFridgeFromSearch('${escapeHtml(nm)}','${gr}г')"
+            style="flex:1;padding:8px;background:var(--acc-d);border:1.5px solid var(--acc);border-radius:8px;color:var(--acc);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+            🧊 Холод.
+          </button>
+          <button onclick="quickAddToShop('${escapeHtml(nm)}','${gr}г')"
+            style="flex:1;padding:8px;background:var(--grn-d);border:1.5px solid var(--grn);border-radius:8px;color:var(--grn);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+            🛒 Купить
+          </button>
+        </div>`;
     } else {
       if (resultEl) resultEl.innerHTML = `<div style="color:var(--red);font-size:12px">⚠️ Не удалось определить КБЖУ для "${escapeHtml(name)}".<br>Попробуй другое название.</div>`;
     }
