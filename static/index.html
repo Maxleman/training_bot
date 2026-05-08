@@ -1979,6 +1979,44 @@ async function askFridgeSuggest() {
   }
 }
 
+
+function applyManualKBZHU(name, grams) {
+  const kcalPer = parseFloat(document.getElementById('manKcal')?.value) || 0;
+  const bPer = parseFloat(document.getElementById('manB')?.value) || 0;
+  const jPer = parseFloat(document.getElementById('manJ')?.value) || 0;
+  const uPer = parseFloat(document.getElementById('manU')?.value) || 0;
+  const mult = grams / 100;
+  const kcal = Math.round(kcalPer * mult);
+  const b = parseFloat((bPer * mult).toFixed(1));
+  const j = parseFloat((jPer * mult).toFixed(1));
+  const u = parseFloat((uPer * mult).toFixed(1));
+
+  // Save to custom KBZHU cache
+  const cache = LS('kbzhu_cache', {});
+  cache[name.toLowerCase()] = {kcal: kcalPer, b: bPer, j: jPer, u: uPer, name};
+  LSset('kbzhu_cache', cache);
+
+  const resultEl = document.getElementById('shopKbzhuResult');
+  if (resultEl) resultEl.innerHTML = `
+    <div style="font-weight:800;font-size:13px;margin-bottom:8px">🧮 ${escapeHtml(name)} ${grams}г <span style="font-size:10px;color:var(--grn)">✓ с упаковки</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      <span style="background:var(--org-d);color:var(--org);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">${kcal} ккал</span>
+      <span style="background:var(--acc-d);color:var(--acc);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Б: ${b}г</span>
+      <span style="background:var(--grn-d);color:var(--grn);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Ж: ${j}г</span>
+      <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">У: ${u}г</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${escapeHtml(name)} ${grams}г')"
+        style="flex:2;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+        ＋ В дневник
+      </button>
+      <button onclick="addToFridgeFromSearch('${escapeHtml(name)}','${grams}г')"
+        style="flex:1;padding:8px;background:var(--acc-d);border:1.5px solid var(--acc);border-radius:8px;color:var(--acc);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+        🧊 Холод.
+      </button>
+    </div>`;
+}
+
 function quickAddToShop(name, qty) {
   const list = getMyShop();
   list.push({
@@ -2975,9 +3013,15 @@ async function calcShopItemKBZHU() {
   const resultEl = document.getElementById('shopKbzhuResult');
   if (resultEl) { resultEl.style.display = 'block'; resultEl.innerHTML = '⏳ Ищу КБЖУ...'; }
 
-  // First check FOOD_DB
+  // First check user's custom KBZHU cache (from manual entries)
   const q = name.toLowerCase();
-  const found = (typeof FOOD_DB !== 'undefined' ? FOOD_DB : []).find(f => f.n.toLowerCase().includes(q));
+  const cache = LS('kbzhu_cache', {});
+  const cached = Object.values(cache).find(c => c.name && c.name.toLowerCase().includes(q));
+
+  // Then check FOOD_DB
+  const found = cached
+    ? {n: cached.name, k: cached.kcal, b: cached.b, j: cached.j, u: cached.u}
+    : (typeof FOOD_DB !== 'undefined' ? FOOD_DB : []).find(f => f.n.toLowerCase().includes(q));
 
   if (found) {
     const grams = parseGramsFromQty(qty) || 100;
@@ -3049,7 +3093,29 @@ async function calcShopItemKBZHU() {
           </button>
         </div>`;
     } else {
-      if (resultEl) resultEl.innerHTML = `<div style="color:var(--red);font-size:12px">⚠️ Не удалось определить КБЖУ для "${escapeHtml(name)}".<br>Попробуй другое название.</div>`;
+      // Show manual entry form
+      if (resultEl) resultEl.innerHTML = `
+        <div style="font-size:12px;color:var(--yel);margin-bottom:10px">
+          ⚠️ Не нашёл "${escapeHtml(name)}" в базе.<br>Введи КБЖУ вручную с упаковки:
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+          <div><div style="font-size:9px;color:var(--txt3);font-weight:700;margin-bottom:3px">ККАЛ/100г</div>
+            <input id="manKcal" type="number" placeholder="45"
+              style="width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:7px;padding:6px;color:var(--txt);font-size:13px;font-weight:700;outline:none;text-align:center"></div>
+          <div><div style="font-size:9px;color:var(--acc);font-weight:700;margin-bottom:3px">БЕЛКИ г</div>
+            <input id="manB" type="number" placeholder="0"
+              style="width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:7px;padding:6px;color:var(--txt);font-size:13px;font-weight:700;outline:none;text-align:center"></div>
+          <div><div style="font-size:9px;color:var(--grn);font-weight:700;margin-bottom:3px">ЖИРЫ г</div>
+            <input id="manJ" type="number" placeholder="0"
+              style="width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:7px;padding:6px;color:var(--txt);font-size:13px;font-weight:700;outline:none;text-align:center"></div>
+          <div><div style="font-size:9px;color:var(--yel);font-weight:700;margin-bottom:3px">УГЛЕВ г</div>
+            <input id="manU" type="number" placeholder="11"
+              style="width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:7px;padding:6px;color:var(--txt);font-size:13px;font-weight:700;outline:none;text-align:center"></div>
+        </div>
+        <button onclick="applyManualKBZHU('${escapeHtml(name)}', ${grams})"
+          style="width:100%;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Рассчитать и добавить
+        </button>`;
     }
   } catch(e) {
     if (resultEl) resultEl.innerHTML = '<div style="color:var(--red);font-size:12px">⚠️ Ошибка соединения</div>';

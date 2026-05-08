@@ -1045,26 +1045,49 @@ async def get_kbzhu(request: Request):
     if not GROQ_API_KEY:
         return {"error": "not found"}
 
-    prompt = f"""Дай КБЖУ для "{product}" на 100г. Отвечай ТОЛЬКО JSON без текста:
-{{"kcal": число, "protein": число, "fat": число, "carbs": число}}
-Только цифры, без единиц измерения. Если не знаешь — используй ближайший аналог."""
+    prompt = f"""Дай точное КБЖУ для "{product}" на 100г по реальным данным с упаковки или из официальных баз.
+Отвечай ТОЛЬКО JSON без текста и пояснений:
+{{"kcal": число, "protein": число, "fat": число, "carbs": число, "reliable": true/false}}
+
+Правила:
+- Если это энергетик, снек, брендовый продукт — используй известные данные с упаковки
+- Если не уверен — ставь reliable: false
+- Типичный энергетик (горилла, монстер, ред булл) на 100мл: ~45 ккал, Б:0, Ж:0, У:11г
+- Только цифры, без единиц измерения"""
 
     try:
-        data = await groq_call([{"role": "user", "content": prompt}], max_tokens=60)
-        if data.get("choices"):
-            import json as json_mod, re
-            text = data["choices"][0]["message"]["content"].strip()
-            match = re.search(r'\{[^}]+\}', text)
-            if match:
-                vals = json_mod.loads(match.group())
-                mult = grams / 100
-                return {
-                    "kcal": round(float(vals.get("kcal", 0)) * mult),
-                    "protein": round(float(vals.get("protein", 0)) * mult, 1),
-                    "fat": round(float(vals.get("fat", 0)) * mult, 1),
-                    "carbs": round(float(vals.get("carbs", 0)) * mult, 1),
-                    "source": "ai"
-                }
+        # Use smarter model for KBZHU accuracy
+        import json as json_mod, re
+        for model in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"]:
+            try:
+                async with httpx.AsyncClient(timeout=15) as client:
+                    r = await client.post(
+                        GROQ_URL,
+                        json={"model": model, "messages": [{"role": "user", "content": prompt}],
+                              "temperature": 0.1, "max_tokens": 80},
+                        headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+                    )
+                    d = r.json()
+                if r.status_code == 200 and d.get("choices"):
+                    text = d["choices"][0]["message"]["content"].strip()
+                    match = re.search(r'\{[^}]+\}', text)
+                    if match:
+                        vals = json_mod.loads(match.group())
+                        mult = grams / 100
+                        reliable = vals.get("reliable", True)
+                        return {
+                            "kcal": round(float(vals.get("kcal", 0)) * mult),
+                            "protein": round(float(vals.get("protein", 0)) * mult, 1),
+                            "fat": round(float(vals.get("fat", 0)) * mult, 1),
+                            "carbs": round(float(vals.get("carbs", 0)) * mult, 1),
+                            "source": "ai",
+                            "reliable": reliable,
+                            "model": model
+                        }
+                elif r.status_code == 429:
+                    continue
+            except Exception:
+                continue
     except Exception as e:
         logger.error(f"KBZHU AI error: {e}")
 
