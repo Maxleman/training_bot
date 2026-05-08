@@ -437,33 +437,67 @@ window.addEventListener('load', () => {
     </div>
   </div>
 
-  <!-- Calories -->
+  <!-- Calories summary -->
   <div class="tracker-card">
     <div class="tracker-head">
       <div><div class="tracker-title">🔥 Калории</div><div class="tracker-unit">цель: 2800 ккал</div></div>
       <div><div class="tracker-val" id="kcalVal">0</div><div class="tracker-unit" style="text-align:right">ккал</div></div>
     </div>
     <div class="progress-bar"><div class="progress-fill pf-kcal" id="kcalBar" style="width:0%"></div></div>
-    <div class="quick-btns">
-      <button class="qbtn" onclick="addKcal(200)">+200</button>
-      <button class="qbtn" onclick="addKcal(400)">+400</button>
-      <button class="qbtn" onclick="addKcal(600)">+600</button>
-      <button class="qbtn" onclick="addKcal(-200)" style="color:var(--red)">−200</button>
+    <div style="display:flex;gap:12px;margin-top:8px;text-align:center">
+      <div style="flex:1;background:var(--acc-d);border-radius:8px;padding:6px 4px">
+        <div style="font-size:16px;font-weight:800;color:var(--acc)" id="macroB">0</div>
+        <div style="font-size:9px;color:var(--txt3);font-weight:700">БЕЛКИ г</div>
+      </div>
+      <div style="flex:1;background:rgba(61,214,140,.1);border-radius:8px;padding:6px 4px">
+        <div style="font-size:16px;font-weight:800;color:var(--grn)" id="macroJ">0</div>
+        <div style="font-size:9px;color:var(--txt3);font-weight:700">ЖИРЫ г</div>
+      </div>
+      <div style="flex:1;background:rgba(245,200,66,.1);border-radius:8px;padding:6px 4px">
+        <div style="font-size:16px;font-weight:800;color:var(--yel)" id="macroU">0</div>
+        <div style="font-size:9px;color:var(--txt3);font-weight:700">УГЛЕВ г</div>
+      </div>
     </div>
   </div>
 
-  <!-- Food log -->
+  <!-- Food Calculator -->
   <div class="card"><div class="sec">
-    <div class="sec-lbl">📝 Что съел сегодня</div>
-    <div class="log-food-wrap" style="margin-top:0">
-      <div class="log-food-row" style="gap:6px;margin-bottom:8px">
-        <input id="foodName" placeholder="Название блюда..." style="flex:2">
-        <input id="foodKcal" placeholder="ккал" type="number" style="flex:1;max-width:80px">
-        <button class="log-btn" onclick="logFood()">＋</button>
-      </div>
+    <div class="sec-lbl">🧮 Калькулятор КБЖУ</div>
+    <div style="position:relative;margin-bottom:8px">
+      <input id="foodSearch" placeholder="Поиск продукта (курица, рис, яйцо...)"
+        style="width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:10px;padding:10px 14px;color:var(--txt);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;outline:none"
+        oninput="searchFood(this.value)" autocomplete="off">
+      <div id="foodSuggest" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:50;background:var(--sur2);border:1px solid var(--bor2);border-radius:10px;margin-top:4px;max-height:200px;overflow-y:auto"></div>
     </div>
+    <div id="selectedFood" style="display:none;background:var(--acc-d);border-radius:10px;padding:10px 14px;margin-bottom:8px;border:1px solid rgba(79,142,247,.2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:800;color:var(--acc)" id="selFoodName">—</div>
+        <div style="font-size:10px;color:var(--txt3)" id="selFoodPer">на 100г</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;background:var(--acc);color:white;padding:2px 8px;border-radius:6px" id="selKcal">0 ккал</span>
+        <span style="font-size:11px;font-weight:700;background:rgba(61,214,140,.2);color:var(--grn);padding:2px 8px;border-radius:6px" id="selB">Б: 0г</span>
+        <span style="font-size:11px;font-weight:700;background:rgba(245,200,66,.1);color:var(--yel);padding:2px 8px;border-radius:6px" id="selJ">Ж: 0г</span>
+        <span style="font-size:11px;font-weight:700;background:rgba(157,127,245,.1);color:var(--pur);padding:2px 8px;border-radius:6px" id="selU">У: 0г</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:11px;color:var(--txt2);font-weight:600;white-space:nowrap">Граммы:</div>
+        <input id="foodGrams" type="number" value="100" min="1" max="2000"
+          style="flex:1;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:8px;padding:7px 10px;color:var(--txt);font-size:16px;font-family:'DM Sans',sans-serif;font-weight:800;outline:none;text-align:center"
+          oninput="updateCalcResult()">
+        <div style="font-size:11px;color:var(--txt2);font-weight:600">г</div>
+      </div>
+      <div id="calcResult" style="margin-top:8px;padding:8px;background:rgba(79,142,247,.08);border-radius:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>
+      <button onclick="addCalculatedFood()"
+        style="width:100%;margin-top:8px;padding:9px;background:var(--acc);border:none;border-radius:9px;color:white;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.5px">
+        ＋ Добавить в дневник
+      </button>
+    </div>
+
+    <!-- Food log -->
+    <div class="sec-lbl" style="margin-top:4px">📝 Дневник питания</div>
     <div id="foodLog"></div>
-    <div style="margin-top:8px;font-size:10px;color:var(--txt3);font-weight:600">Нажми на запись чтобы удалить</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--txt3);font-weight:600">Нажми на запись чтобы удалить</div>
   </div></div>
 
   <!-- Reset -->
@@ -1117,6 +1151,189 @@ function showScreen(id){
   if(id==='progress'){renderMeasures();updateStats();}
   if(id==='month'){renderMonth();}
 }
+
+
+// ==================== FOOD DATABASE ====================
+const FOOD_DB = [
+  // Мясо и птица
+  {n:'Куриная грудка (варёная)',k:165,b:31,j:3.6,u:0},
+  {n:'Куриная грудка (жареная)',k:197,b:30,j:8,u:0},
+  {n:'Куриные бёдра (запечённые)',k:215,b:25,j:12,u:0},
+  {n:'Говядина (варёная)',k:254,b:26,j:16,u:0},
+  {n:'Говяжий фарш (жареный)',k:272,b:24,j:19,u:0},
+  {n:'Свинина (жареная)',k:297,b:25,j:21,u:0},
+  {n:'Индейка грудка',k:157,b:30,j:3,u:0},
+  // Рыба
+  {n:'Хек (запечённый)',k:95,b:18,j:2,u:0},
+  {n:'Минтай (варёный)',k:92,b:18,j:1,u:0},
+  {n:'Лосось (запечённый)',k:208,b:25,j:12,u:0},
+  {n:'Тунец (консерва в собст. соку)',k:96,b:22,j:1,u:0},
+  {n:'Скумбрия (запечённая)',k:220,b:20,j:15,u:0},
+  // Крупы и макароны (варёные)
+  {n:'Гречка варёная',k:110,b:4,j:1,u:21},
+  {n:'Рис белый варёный',k:130,b:2.7,j:0.3,u:28},
+  {n:'Овсянка на воде',k:88,b:3,j:1.5,u:15},
+  {n:'Овсянка на молоке',k:130,b:5,j:3.5,u:19},
+  {n:'Паста варёная',k:158,b:5.5,j:0.9,u:31},
+  {n:'Картофель варёный',k:82,b:2,j:0.1,u:18},
+  {n:'Картофель запечённый',k:93,b:2.5,j:0.1,u:21},
+  // Молочные продукты
+  {n:'Творог 5%',k:121,b:17,j:5,u:2},
+  {n:'Творог 0%',k:71,b:16,j:0.5,u:1.5},
+  {n:'Молоко 2.5%',k:52,b:2.9,j:2.5,u:4.7},
+  {n:'Кефир 1%',k:40,b:3.2,j:1,u:4},
+  {n:'Йогурт натуральный 3%',k:66,b:5,j:3.2,u:3.5},
+  {n:'Сыр твёрдый',k:350,b:25,j:27,u:0},
+  {n:'Сметана 15%',k:158,b:2.6,j:15,u:3.5},
+  // Яйца
+  {n:'Яйцо варёное (1 шт = 55г)',k:157,b:12.7,j:11.5,u:0.7},
+  {n:'Яичница (2 яйца)',k:196,b:14,j:15,u:0.5},
+  {n:'Омлет (2 яйца + молоко)',k:184,b:13,j:14,u:2},
+  // Хлеб
+  {n:'Хлеб цельнозерновой',k:247,b:9,j:3.5,u:43},
+  {n:'Хлеб белый',k:265,b:8,j:2.5,u:51},
+  // Орехи и масла
+  {n:'Грецкие орехи',k:654,b:15,j:65,u:7},
+  {n:'Миндаль',k:579,b:21,j:50,u:22},
+  {n:'Арахисовая паста',k:588,b:25,j:50,u:20},
+  {n:'Оливковое масло',k:884,b:0,j:100,u:0},
+  {n:'Подсолнечное масло',k:884,b:0,j:100,u:0},
+  // Фрукты
+  {n:'Банан',k:89,b:1.1,j:0.3,u:23},
+  {n:'Яблоко',k:52,b:0.3,j:0.2,u:14},
+  {n:'Груша',k:57,b:0.4,j:0.1,u:15},
+  {n:'Апельсин',k:47,b:0.9,j:0.2,u:12},
+  // Овощи
+  {n:'Огурец',k:15,b:0.7,j:0.1,u:3},
+  {n:'Помидор',k:18,b:0.9,j:0.2,u:3.7},
+  {n:'Морковь',k:35,b:0.9,j:0.2,u:8},
+  {n:'Перец болгарский',k:26,b:1,j:0.2,u:6},
+  {n:'Лук репчатый',k:40,b:1.1,j:0.1,u:9},
+  {n:'Капуста белокочанная',k:27,b:1.8,j:0.1,u:6},
+  // Бобовые
+  {n:'Чечевица варёная',k:116,b:9,j:0.4,u:20},
+  {n:'Фасоль варёная',k:127,b:8.7,j:0.5,u:22},
+  // Сладкое и прочее
+  {n:'Мёд',k:304,b:0.3,j:0,u:82},
+  {n:'Сахар',k:387,b:0,j:0,u:100},
+  {n:'Шоколад тёмный 70%',k:598,b:8,j:43,u:46},
+  {n:'Гейнер (средний)',k:380,b:25,j:4,u:62},
+  {n:'Протеин (1 мерная ложка)',k:120,b:24,j:1.5,u:3},
+];
+
+let selectedFoodItem = null;
+
+function searchFood(query) {
+  const suggest = document.getElementById('foodSuggest');
+  if (!query || query.length < 2) { suggest.style.display='none'; return; }
+  const q = query.toLowerCase();
+  const results = FOOD_DB.filter(f => f.n.toLowerCase().includes(q)).slice(0, 8);
+  if (!results.length) { suggest.style.display='none'; return; }
+  suggest.style.display = 'block';
+  suggest.innerHTML = results.map((f,i) => `
+    <div onclick="selectFoodItem(${FOOD_DB.indexOf(f)})"
+      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--bor);font-size:13px;font-weight:600;transition:background .15s"
+      onmouseover="this.style.background='rgba(79,142,247,.1)'" onmouseout="this.style.background=''">
+      <span style="color:var(--txt)">${f.n}</span>
+      <span style="color:var(--txt3);font-size:11px;margin-left:8px">${f.k} ккал/100г</span>
+    </div>`).join('');
+}
+
+function selectFoodItem(idx) {
+  selectedFoodItem = FOOD_DB[idx];
+  document.getElementById('foodSuggest').style.display = 'none';
+  document.getElementById('foodSearch').value = selectedFoodItem.n;
+  document.getElementById('selectedFood').style.display = 'block';
+  document.getElementById('selFoodName').textContent = selectedFoodItem.n;
+  document.getElementById('selKcal').textContent = selectedFoodItem.k + ' ккал';
+  document.getElementById('selB').textContent = 'Б: ' + selectedFoodItem.b + 'г';
+  document.getElementById('selJ').textContent = 'Ж: ' + selectedFoodItem.j + 'г';
+  document.getElementById('selU').textContent = 'У: ' + selectedFoodItem.u + 'г';
+  document.getElementById('foodGrams').value = 100;
+  updateCalcResult();
+}
+
+function updateCalcResult() {
+  if (!selectedFoodItem) return;
+  const g = parseFloat(document.getElementById('foodGrams').value) || 0;
+  const mult = g / 100;
+  const kcal = Math.round(selectedFoodItem.k * mult);
+  const b = (selectedFoodItem.b * mult).toFixed(1);
+  const j = (selectedFoodItem.j * mult).toFixed(1);
+  const u = (selectedFoodItem.u * mult).toFixed(1);
+  document.getElementById('calcResult').innerHTML = `
+    <span style="font-size:13px;font-weight:800;color:var(--org)">${kcal} ккал</span>
+    <span style="font-size:12px;color:var(--acc)">Б: ${b}г</span>
+    <span style="font-size:12px;color:var(--grn)">Ж: ${j}г</span>
+    <span style="font-size:12px;color:var(--yel)">У: ${u}г</span>
+    <span style="font-size:11px;color:var(--txt3)">(${g}г)</span>`;
+}
+
+function addCalculatedFood() {
+  if (!selectedFoodItem) return;
+  const g = parseFloat(document.getElementById('foodGrams').value) || 0;
+  const mult = g / 100;
+  const kcal = Math.round(selectedFoodItem.k * mult);
+  const b = parseFloat((selectedFoodItem.b * mult).toFixed(1));
+  const j = parseFloat((selectedFoodItem.j * mult).toFixed(1));
+  const u = parseFloat((selectedFoodItem.u * mult).toFixed(1));
+
+  const k = getTodayKey() + '_foods';
+  const foods = LS(k, []);
+  foods.push({ n: selectedFoodItem.n + ' ' + g + 'г', k: kcal, b, j, u });
+  LSset(k, foods);
+  addKcal(kcal);
+
+  // Update macros
+  updateMacros();
+
+  // Reset
+  document.getElementById('foodSearch').value = '';
+  document.getElementById('selectedFood').style.display = 'none';
+  document.getElementById('calcResult').innerHTML = '';
+  selectedFoodItem = null;
+  renderFoodLog();
+}
+
+function updateMacros() {
+  const k = getTodayKey() + '_foods';
+  const foods = LS(k, []);
+  const totB = foods.reduce((s,f) => s + (f.b||0), 0).toFixed(1);
+  const totJ = foods.reduce((s,f) => s + (f.j||0), 0).toFixed(1);
+  const totU = foods.reduce((s,f) => s + (f.u||0), 0).toFixed(1);
+  const bEl = document.getElementById('macroB');
+  const jEl = document.getElementById('macroJ');
+  const uEl = document.getElementById('macroU');
+  if (bEl) bEl.textContent = totB;
+  if (jEl) jEl.textContent = totJ;
+  if (uEl) uEl.textContent = totU;
+}
+
+// Override renderFoodLog to show macros too
+const _origRenderFoodLog = window.renderFoodLog;
+
+
+// Patch renderFoodLog to also update macros
+const __origRenderFoodLog = renderFoodLog;
+renderFoodLog = function() {
+  __origRenderFoodLog();
+  updateMacros();
+};
+
+// Patch updateTracker to also update macros
+const __origUpdateTracker = updateTracker;
+updateTracker = function() {
+  __origUpdateTracker();
+  updateMacros();
+};
+
+// Close suggest on outside click
+document.addEventListener('click', (e) => {
+  const s = document.getElementById('foodSuggest');
+  if (s && !s.contains(e.target) && e.target.id !== 'foodSearch') {
+    s.style.display = 'none';
+  }
+});
 
 // ==================== INIT ====================
 renderStrip();
