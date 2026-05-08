@@ -51,39 +51,114 @@ async def send_message(chat_id: int, text: str, reply_markup=None):
     async with httpx.AsyncClient() as client:
         await client.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-async def send_daily_notification():
-    """Send workout reminder to all users at 9:00 Minsk time"""
-    now = datetime.now()
-    day = now.day
-    month = now.month
-    year = now.year
+# Shift schedule for May 2026
+DAY_SHIFTS = {3,10,11,12,15,16,17,21,22,28}
+NIGHT_SHIFTS = {5,7,8,19,29,30,31}
 
-    if month != 5 or year != 2026:
-        return
+def get_minsk_now():
+    """Get current time in Minsk (UTC+3)"""
+    from datetime import timezone, timedelta
+    utc_now = datetime.now(timezone.utc)
+    minsk = utc_now + timedelta(hours=3)
+    return minsk
 
-    workout = TRAIN_DAYS.get(day)
-    if not workout:
-        return
-
-    emoji = WORKOUT_EMOJI.get(workout, "💪")
-    text = (
-        f"{emoji} <b>Сегодня день тренировки!</b>\n\n"
-        f"📅 {day} мая — <b>{workout}</b>\n\n"
-        f"Не забудь:\n"
-        f"• Поешь за 1.5 часа до тренировки\n"
-        f"• Гейнер после\n"
-        f"• Вода минимум 2.5л\n\n"
-        f"Открой приложение и отмечай подходы 👇"
-    )
-
-    # Get all users from DB and notify
-    import database
+async def notify_all_users(text: str):
+    """Send message to all registered users"""
     users = await database.get_all_users()
     for user_id in users:
         try:
             await send_message(user_id, text)
         except Exception as e:
             logger.error(f"Failed to notify {user_id}: {e}")
+
+async def notify_after_day_shift():
+    """21:30 Minsk — after day shift ends, if today is training day"""
+    now = get_minsk_now()
+    day = now.day
+    if now.month != 5 or now.year != 2026:
+        return
+    if day not in DAY_SHIFTS:
+        return  # Not a day shift today
+    workout = TRAIN_DAYS.get(day)
+    if not workout:
+        return
+    emoji = WORKOUT_EMOJI.get(workout, "💪")
+    text = (
+        f"{emoji} <b>Смена закончилась — время для себя!</b>\n\n"
+        f"Сегодня: <b>{workout}</b>\n\n"
+        f"План:\n"
+        f"• Поешь нормально (белок + углеводы)\n"
+        f"• Подожди 1–1.5 часа\n"
+        f"• Тренировка — 45–60 минут\n"
+        f"• Гейнер сразу после 🥤\n\n"
+        f"Открой приложение 👇"
+    )
+    await notify_all_users(text)
+
+async def notify_before_night_shift():
+    """13:00 Minsk — before night shift, if today is training day"""
+    now = get_minsk_now()
+    day = now.day
+    if now.month != 5 or now.year != 2026:
+        return
+    if day not in NIGHT_SHIFTS:
+        return  # Not a night shift today
+    workout = TRAIN_DAYS.get(day)
+    if not workout:
+        return
+    emoji = WORKOUT_EMOJI.get(workout, "💪")
+    text = (
+        f"{emoji} <b>До ночной смены 8 часов!</b>\n\n"
+        f"Успей потренироваться: <b>{workout}</b>\n\n"
+        f"Лучшее время — прямо сейчас или в 15:00–16:00.\n"
+        f"После тренировки плотно поешь — смена длинная 🌙\n\n"
+        f"Открой приложение 👇"
+    )
+    await notify_all_users(text)
+
+async def notify_rest_day():
+    """10:00 Minsk — rest or free day with training"""
+    now = get_minsk_now()
+    day = now.day
+    if now.month != 5 or now.year != 2026:
+        return
+    if day in DAY_SHIFTS or day in NIGHT_SHIFTS:
+        return  # Has a shift, other notifications handle it
+    workout = TRAIN_DAYS.get(day)
+    if not workout:
+        return
+    emoji = WORKOUT_EMOJI.get(workout, "💪")
+    text = (
+        f"☀️ <b>Доброе утро, Максим!</b>\n\n"
+        f"Сегодня выходной и день тренировки.\n"
+        f"{emoji} <b>{workout}</b>\n\n"
+        f"Лучшее время: 11:00–13:00 — тело уже проснулось, \n"
+        f"но ещё не устало. Поешь за 1.5 часа до.\n\n"
+        f"Открой приложение 👇"
+    )
+    await notify_all_users(text)
+
+async def notify_evening():
+    """21:30 Minsk — evening reminders for everyone"""
+    now = get_minsk_now()
+    day = now.day
+    if now.month != 5 or now.year != 2026:
+        return
+    # Only on non-night-shift days (night shift workers are at work)
+    if day in NIGHT_SHIFTS:
+        return
+    text = (
+        f"🌙 <b>Вечернее напоминание</b>\n\n"
+        f"• Творог 200г перед сном — медленный белок для мышц ночью\n"
+        f"• Выпил 2.5л воды сегодня? 💧\n"
+        f"• Записал замеры на этой неделе? 📏\n\n"
+        f"Спокойной ночи 😴"
+    )
+    await notify_all_users(text)
+
+async def send_daily_notification():
+    """Legacy — kept for compatibility"""
+    pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -105,14 +180,33 @@ async def lifespan(app: FastAPI):
             )
             logger.info(f"Webhook set: {resp.json()}")
 
-    # Schedule daily notification at 9:00 Minsk (UTC+3)
+    # Smart notifications based on shift schedule
+    # Day shift (9:00-21:00): notify at 21:30 after work
     scheduler.add_job(
-        send_daily_notification,
-        CronTrigger(hour=6, minute=0, timezone="UTC"),  # 9:00 Minsk = 6:00 UTC
-        id="daily_notify"
+        notify_after_day_shift,
+        CronTrigger(hour=18, minute=30, timezone="UTC"),  # 21:30 Minsk
+        id="notify_day_shift"
+    )
+    # Night shift (21:00-9:00): notify at 13:00 before shift
+    scheduler.add_job(
+        notify_before_night_shift,
+        CronTrigger(hour=10, minute=0, timezone="UTC"),  # 13:00 Minsk
+        id="notify_night_shift"
+    )
+    # Rest day: notify at 10:00
+    scheduler.add_job(
+        notify_rest_day,
+        CronTrigger(hour=7, minute=0, timezone="UTC"),  # 10:00 Minsk
+        id="notify_rest_day"
+    )
+    # Evening reminder: творог before sleep at 21:30
+    scheduler.add_job(
+        notify_evening,
+        CronTrigger(hour=18, minute=30, timezone="UTC"),  # 21:30 Minsk
+        id="notify_evening"
     )
     scheduler.start()
-    logger.info("Scheduler started")
+    logger.info("Scheduler started with smart notifications")
 
     yield
 
@@ -165,8 +259,8 @@ async def webhook(request: Request):
             f"🍽 Меню с рецептами и ценами в BYN\n"
             f"💧 Трекер воды и калорий\n"
             f"📈 Прогресс и замеры\n"
-            f"🔔 Уведомления в дни тренировок в 9:00\n"
-            f"🤖 ИИ-тренер — отвечает на любые вопросы\n\n"
+            f"🔔 Умные уведомления по графику смен\n"
+            f"🤖 ИИ-тренер на базе Groq Llama 3.3\n\n"
             f"Нажми кнопку ниже 👇",
             reply_markup=keyboard
         )
@@ -180,15 +274,34 @@ async def webhook(request: Request):
         else:
             await send_message(chat_id, "🛌 Сегодня день отдыха. Восстанавливайся и ешь по плану!")
 
+    elif text == "/schedule":
+        day = datetime.now().day
+        shift_today = "☀️ Дневная (9:00–21:00)" if day in DAY_SHIFTS else "🌙 Ночная (21:00–9:00)" if day in NIGHT_SHIFTS else "🏠 Выходной"
+        workout_today = TRAIN_DAYS.get(day)
+        notify_time = "21:30" if day in DAY_SHIFTS else "13:00" if day in NIGHT_SHIFTS else "10:00"
+        await send_message(
+            chat_id,
+            f"📅 <b>Сегодня, {day} мая:</b>\n\n"
+            f"Смена: {shift_today}\n"
+            f"Тренировка: {'🏋 ' + workout_today if workout_today else '🛌 Нет'} \n"
+            f"Уведомление: {'в ' + notify_time if workout_today else 'вечернее в 21:30'}\n\n"
+            f"Уведомления приходят автоматически по расписанию смен."
+        )
+
     elif text == "/notify":
         await send_message(
             chat_id,
-            "🔔 <b>Уведомления включены!</b>\n\n"
-            "Каждый день тренировки в <b>9:00</b> по Минску я пришлю напоминание.\n\n"
+            "🔔 <b>Умные уведомления активны!</b>\n\n"
+            "Время зависит от твоей смены:\n"
+            "☀️ Дневная → уведомление в <b>21:30</b> (после работы)\n"
+            "🌙 Ночная → уведомление в <b>13:00</b> (до смены)\n"
+            "🏠 Выходной → уведомление в <b>10:00</b>\n"
+            "🌙 Вечером в 21:30 — напоминание про творог и воду\n\n"
             "Команды:\n"
             "/today — что сегодня\n"
-            "/ai — ИИ-тренер (задай любой вопрос)\n"
-            "/stats — твоя статистика\n"
+            "/schedule — расписание на сегодня\n"
+            "/ai — ИИ-тренер\n"
+            "/stats — статистика\n"
             "/start — главное меню"
         )
 
