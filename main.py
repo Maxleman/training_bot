@@ -373,7 +373,47 @@ import re
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODELS = [
+    "llama-3.1-8b-instant",      # fast, high limits
+    "llama3-8b-8192",            # fallback 1
+    "gemma2-9b-it",              # fallback 2
+]
+GROQ_MODEL = GROQ_MODELS[0]
+
+async def groq_call(messages: list, max_tokens: int = 600, tools: list = None, tool_choice: str = None) -> dict:
+    """Call Groq with automatic model fallback on rate limit"""
+    for model in GROQ_MODELS:
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.6,
+            "max_tokens": max_tokens,
+        }
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = tool_choice or "auto"
+            payload["parallel_tool_calls"] = False
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                GROQ_URL, json=payload,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+            )
+            data = resp.json()
+
+        if resp.status_code == 200:
+            data["_model_used"] = model
+            return data
+
+        err = data.get("error", {})
+        if isinstance(err, dict) and "rate" in err.get("message","").lower():
+            logger.warning(f"Rate limit on {model}, trying next...")
+            continue  # try next model
+
+        logger.error(f"Groq error ({model}): {data}")
+        return data  # return error for handling
+
+    return {"error": {"message": "Все модели на лимите. Попробуй через 10-15 минут."}}
 
 BASE_SYSTEM_PROMPT = """Ты — персональный тренер, диетолог и нутрициолог Максима. Ты знаешь его досконально.
 
@@ -829,46 +869,16 @@ async def ai_trainer(request: Request):
     messages.append({"role": "user", "content": message})
 
     # 3. First call WITH tools
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": messages,
-        "tools": AI_TOOLS,
-        "tool_choice": "auto",
-        "temperature": 0.6,
-        "max_tokens": 800,
-        "parallel_tool_calls": False,  # one tool at a time
-    }
-
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            GROQ_URL, json=payload,
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-        )
-        data = resp.json()
-
-    if resp.status_code != 200:
-        logger.error(f"Groq error (with tools): {data}")
-        # Fallback: retry WITHOUT tools
-        payload_fallback = {
-            "model": GROQ_MODEL,
-            "messages": messages,
-            "temperature": 0.6,
-            "max_tokens": 600,
-        }
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
-                GROQ_URL, json=payload_fallback,
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-            )
-            data = resp.json()
-        if resp.status_code != 200:
-            logger.error(f"Groq fallback error: {data}")
-            err_msg = data.get("error", {}).get("message", "Ошибка ИИ") if isinstance(data.get("error"), dict) else str(data)
-            return JSONResponse({"error": err_msg}, status_code=500)
+    data = await groq_call(messages, max_tokens=800, tools=AI_TOOLS, tool_choice="auto")
 
     if not data.get("choices"):
-        logger.error(f"Groq no choices: {data}")
-        return JSONResponse({"error": data.get("error", {}).get("message", "Пустой ответ от ИИ")}, status_code=500)
+        # Try without tools
+        data = await groq_call(messages, max_tokens=600)
+        if not data.get("choices"):
+            err = data.get("error", {})
+            err_msg = err.get("message", "Ошибка ИИ") if isinstance(err, dict) else str(err)
+            logger.error(f"All groq calls failed: {err_msg}")
+            return JSONResponse({"error": err_msg}, status_code=500)
     response_msg = data["choices"][0]["message"]
     tool_calls = response_msg.get("tool_calls") or []
     tool_results = []
@@ -895,20 +905,8 @@ async def ai_trainer(request: Request):
                 "content": str(tool_results[i].get("message", "OK"))
             })
 
-        payload2 = {
-            "model": GROQ_MODEL,
-            "messages": messages,
-            "temperature": 0.6,
-            "max_tokens": 600,
-        }
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp2 = await client.post(
-                GROQ_URL, json=payload2,
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-            )
-            data2 = resp2.json()
-
-        if resp2.status_code == 200:
+        data2 = await groq_call(messages, max_tokens=600)
+        if data2.get("choices"):
             reply = data2["choices"][0]["message"].get("content", "Готово!")
         else:
             reply = response_msg.get("content") or "Готово!"
@@ -951,25 +949,14 @@ async def handle_ai_message(chat_id: int, user_message: str):
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_message}
     ]
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 400,
-    }
-
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            GROQ_URL, json=payload,
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-        )
-        data = resp.json()
-
-    if resp.status_code == 200:
+    data = await groq_call(messages, max_tokens=400)
+    if data.get("choices"):
         reply = data["choices"][0]["message"]["content"]
         await send_message(chat_id, f"🤖 {reply}")
     else:
-        await send_message(chat_id, f"⚠️ Ошибка ИИ: {data.get('error', {}).get('message', 'неизвестная ошибка')}")
+        err = data.get("error", {})
+        msg = err.get("message", "неизвестная ошибка") if isinstance(err, dict) else str(err)
+        await send_message(chat_id, f"⚠️ {msg}")
 
 
 @app.get("/test-ai")
@@ -978,24 +965,13 @@ async def test_ai():
     if not GROQ_API_KEY:
         return {"error": "GROQ_API_KEY not set"}
 
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": [{"role": "user", "content": "скажи привет одним словом"}],
-        "max_tokens": 20
-    }
-
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            GROQ_URL, json=payload,
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-        )
-        data = resp.json()
-
+    data = await groq_call([{"role": "user", "content": "скажи привет одним словом"}], max_tokens=20)
     return {
-        "status_code": resp.status_code,
-        "model": GROQ_MODEL,
+        "model_used": data.get("_model_used", "unknown"),
+        "models_available": GROQ_MODELS,
         "key_prefix": GROQ_API_KEY[:8] + "...",
-        "response": data
+        "success": bool(data.get("choices")),
+        "response": data.get("choices", [{}])[0].get("message", {}).get("content", "") if data.get("choices") else data.get("error")
     }
 
 
@@ -1072,23 +1048,10 @@ async def get_kbzhu(request: Request):
 Только цифры, без единиц измерения. Если не знаешь — используй ближайший аналог."""
 
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.post(
-                GROQ_URL,
-                json={
-                    "model": GROQ_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.1,
-                    "max_tokens": 60,
-                },
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-            )
-            data = resp.json()
-
-        if resp.status_code == 200:
+        data = await groq_call([{"role": "user", "content": prompt}], max_tokens=60)
+        if data.get("choices"):
             import json as json_mod, re
             text = data["choices"][0]["message"]["content"].strip()
-            # Extract JSON from response
             match = re.search(r'\{[^}]+\}', text)
             if match:
                 vals = json_mod.loads(match.group())

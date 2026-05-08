@@ -1647,11 +1647,26 @@ function handleToolResult(result) {
     }
 
     case 'add_to_shop': {
-      // Add to shopping list in localStorage
-      const shop = LS('ai_shopping_list', []);
-      shop.push(result.item);
-      LSset('ai_shopping_list', shop);
+      // Add to MY shopping list directly
+      const myList = getMyShop ? getMyShop() : LS('my_shop_list', []);
+      const item = result.item || {};
+      myList.push({
+        name: item.name || item.product_name || '?',
+        qty: item.qty || item.quantity || '1 шт',
+        price: parseFloat(item.price || item.price_byn || 0),
+        cat: item.category || 'Прочее',
+        checked: false,
+        id: Date.now(),
+        added: new Date().toLocaleDateString('ru')
+      });
+      if (typeof saveMyShop === 'function') saveMyShop(myList);
+      else LSset('my_shop_list', myList);
+      // Also update ai_shopping_list for the card display
+      const aiList = LS('ai_shopping_list', []);
+      aiList.push(item);
+      LSset('ai_shopping_list', aiList);
       showToast('🛒 ' + result.message, 'green');
+      if (curScreen === 'shop') renderMyShop();
       break;
     }
 
@@ -1956,6 +1971,24 @@ async function askFridgeSuggest() {
   } catch(e) {
     if (sugEl) sugEl.innerHTML = '<div style="font-size:12px;color:var(--red);padding:10px">⚠️ Ошибка соединения</div>';
   }
+}
+
+function addToFridgeFromSearch(name, qty) {
+  const fridge = getFridge();
+  const existing = fridge.find(i => i.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    showToast('🔄 ' + name + ' уже в холодильнике', 'yellow');
+    return;
+  }
+  fridge.push({
+    id: Date.now(),
+    name, qty: qty || '',
+    exp: '', cat: '📦 Прочее',
+    emoji: getFridgeEmoji(name),
+    added: new Date().toLocaleDateString('ru')
+  });
+  saveFridge(fridge);
+  showToast('🧊 Добавлено в холодильник: ' + name, 'green');
 }
 
 // Close fridge suggest on outside click
@@ -2485,7 +2518,15 @@ async function sendAI() {
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();
 
-    const reply = data.reply || (data.error ? '⚠️ ' + data.error : 'Ошибка ответа');
+    let reply = data.reply;
+    if (!reply) {
+      const errMsg = data.error || 'Ошибка ответа';
+      if (typeof errMsg === 'string' && errMsg.includes('rate')) {
+        reply = '⏳ Лимит запросов. Попробуй через 10-15 минут. Groq бесплатный, но имеет дневной лимит токенов.';
+      } else {
+        reply = '⚠️ ' + (typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+      }
+    }
     const formatted = escapeHtml(reply)
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\n/g, '<br>');
@@ -2735,6 +2776,13 @@ function addMyShopItem() {
   });
   saveMyShop(list);
 
+  // Save to custom products list for future search
+  const customProds = LS('custom_products', []);
+  if (!customProds.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+    customProds.push({name, price, cat, added: new Date().toLocaleDateString('ru')});
+    LSset('custom_products', customProds);
+  }
+
   // Clear inputs
   if (nameEl) nameEl.value = '';
   if (qtyEl) qtyEl.value = '';
@@ -2860,11 +2908,11 @@ function searchShopSuggest(query) {
   if (!query || query.length < 2) { el.style.display = 'none'; return; }
   const q = query.toLowerCase();
   const allItems = typeof FOOD_DB !== 'undefined' ? FOOD_DB : [];
-  // Also search my shop list items
+  const customProds = LS('custom_products', []).map(p => ({n: p.name, k: 0, b: 0, j: 0, u: 0}));
   const myItems = getMyShop().map(i => ({n: i.name, k: 0, b: 0, j: 0, u: 0}));
-  const combined = [...allItems, ...myItems];
-  const results = combined.filter((f,idx,arr) =>
-    f.n.toLowerCase().includes(q) && arr.findIndex(x=>x.n===f.n)===idx
+  const combined = [...allItems, ...customProds, ...myItems];
+  const results = combined.filter((f, idx, arr) =>
+    f.n.toLowerCase().includes(q) && arr.findIndex(x => x.n === f.n) === idx
   ).slice(0, 8);
   if (!results.length) { el.style.display = 'none'; return; }
   el.style.display = 'block';
