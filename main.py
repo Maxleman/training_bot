@@ -258,8 +258,9 @@ async def root():
 
 import re
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 SYSTEM_PROMPT = """Ты персональный тренер и диетолог Максима. Вот его данные:
 
@@ -295,102 +296,103 @@ SYSTEM_PROMPT = """Ты персональный тренер и диетоло�
 
 @app.post("/api/ai-trainer")
 async def ai_trainer(request: Request):
-    if not GEMINI_API_KEY:
-        return JSONResponse({"error": "GEMINI_API_KEY not configured"}, status_code=500)
-    
+    if not GROQ_API_KEY:
+        return JSONResponse({"error": "GROQ_API_KEY not configured"}, status_code=500)
+
     body = await request.json()
     message = body.get("message", "").strip()
-    history = body.get("history", [])  # [{role, text}]
-    
+    history = body.get("history", [])
+
     if not message:
         return JSONResponse({"error": "empty message"}, status_code=400)
-    
-    # Build conversation for Gemini
-    contents = []
-    
-    # Add history (last 6 messages for context)
+
+    # Build messages for Groq (OpenAI format)
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for h in history[-6:]:
-        role = "user" if h.get("role") == "user" else "model"
-        contents.append({
-            "role": role,
-            "parts": [{"text": h.get("text", "")}]
-        })
-    
-    # Add current message
-    contents.append({
-        "role": "user",
-        "parts": [{"text": message}]
-    })
-    
+        role = "user" if h.get("role") == "user" else "assistant"
+        messages.append({"role": role, "content": h.get("text", "")})
+    messages.append({"role": "user", "content": message})
+
     payload = {
-        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": contents,
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 300,
-        }
+        "model": GROQ_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 400,
     }
-    
+
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-            json=payload
+            GROQ_URL,
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            }
         )
         data = resp.json()
-    
+
     if resp.status_code != 200:
-        logger.error(f"Gemini error: {data}")
+        logger.error(f"Groq error: {data}")
         return JSONResponse({"error": "AI error", "detail": str(data)}, status_code=500)
-    
-    text = data["candidates"][0]["content"]["parts"][0]["text"]
+
+    text = data["choices"][0]["message"]["content"]
     return {"reply": text}
 
 # Handle AI questions via bot commands too
 async def handle_ai_message(chat_id: int, user_message: str):
     """Process AI trainer request from Telegram bot"""
-    if not GEMINI_API_KEY:
-        await send_message(chat_id, "⚠️ ИИ-тренер не настроен. Добавь GEMINI_API_KEY в переменные.")
+    if not GROQ_API_KEY:
+        await send_message(chat_id, "⚠️ ИИ-тренер не настроен. Добавь GROQ_API_KEY в переменные.")
         return
-    
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_message}
+    ]
     payload = {
-        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"role": "user", "parts": [{"text": user_message}]}],
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 300}
+        "model": GROQ_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 400,
     }
-    
+
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(f"{GEMINI_URL}?key={GEMINI_API_KEY}", json=payload)
+        resp = await client.post(
+            GROQ_URL, json=payload,
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+        )
         data = resp.json()
-    
+
     if resp.status_code == 200:
-        reply = data["candidates"][0]["content"]["parts"][0]["text"]
+        reply = data["choices"][0]["message"]["content"]
         await send_message(chat_id, f"🤖 {reply}")
     else:
-        await send_message(chat_id, "⚠️ Ошибка ИИ, попробуй позже.")
+        await send_message(chat_id, f"⚠️ Ошибка ИИ: {data.get('error', {}).get('message', 'неизвестная ошибка')}")
 
 
 @app.get("/test-ai")
 async def test_ai():
-    """Test Gemini API connection"""
-    if not GEMINI_API_KEY:
-        return {"error": "GEMINI_API_KEY not set"}
-    
+    """Test Groq API connection"""
+    if not GROQ_API_KEY:
+        return {"error": "GROQ_API_KEY not set"}
+
     payload = {
-        "contents": [{"role": "user", "parts": [{"text": "скажи привет одним словом"}]}],
-        "generationConfig": {"maxOutputTokens": 50}
+        "model": GROQ_MODEL,
+        "messages": [{"role": "user", "content": "скажи привет одним словом"}],
+        "max_tokens": 20
     }
-    
+
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-            json=payload
+            GROQ_URL, json=payload,
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
         )
         data = resp.json()
-    
+
     return {
         "status_code": resp.status_code,
-        "gemini_url": GEMINI_URL,
-        "key_prefix": GEMINI_API_KEY[:8] + "...",
+        "model": GROQ_MODEL,
+        "key_prefix": GROQ_API_KEY[:8] + "...",
         "response": data
     }
 
@@ -415,7 +417,7 @@ async def setup_webhook():
         return {
             "webhook_set": data,
             "webhook_url": f"{WEBHOOK_URL}/webhook",
-            "bot_token_set": bool(BOT_TOKEN),
+            "bot_token": "set" if BOT_TOKEN else "MISSING",
         }
 
 @app.get("/status")
