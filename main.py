@@ -88,8 +88,13 @@ async def send_daily_notification():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await init_db()
-    logger.info("Database initialized")
+    try:
+        await init_db()
+        logger.info("Database initialized OK")
+    except Exception as e:
+        logger.error(f"DB init failed: {e}")
+        logger.error(f"DATABASE_URL set: {bool(os.getenv('DATABASE_URL'))}")
+        raise
 
     # Set webhook
     if BOT_TOKEN and WEBHOOK_URL:
