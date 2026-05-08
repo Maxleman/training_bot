@@ -300,6 +300,18 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
 
 .hidden{display:none!important}
 
+.my-shop-item{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--sur2);border-radius:10px;border:1px solid var(--bor);margin-bottom:6px;transition:all .15s}
+.my-shop-item.checked-item{opacity:.5}
+.my-shop-item.checked-item .my-shop-name{text-decoration:line-through}
+.my-shop-cb{width:20px;height:20px;border-radius:6px;border:2px solid var(--bor2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;transition:all .15s}
+.my-shop-cb.on{background:var(--grn);border-color:var(--grn);color:white}
+.my-shop-name{flex:1;font-size:13px;font-weight:600;color:var(--txt)}
+.my-shop-qty{font-size:11px;color:var(--txt3);font-weight:700}
+.my-shop-price{font-size:11px;font-weight:800;color:var(--yel);background:rgba(245,200,66,.1);padding:2px 7px;border-radius:5px}
+.my-shop-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:14px;padding:0 2px}
+.shop-cat-header{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin:10px 0 6px;padding-left:4px}
+
+
 .sleep-ring-wrap{display:flex;justify-content:center;margin:16px 0}
 .sleep-arc-text{font-family:'Bebas Neue',sans-serif;font-size:36px;fill:var(--pur)}
 .sleep-arc-sub{font-size:11px;fill:var(--txt3);font-family:'DM Sans',sans-serif;font-weight:700}
@@ -736,10 +748,64 @@ window.addEventListener('load', () => {
 
 <!-- SCREEN: SHOP -->
 <div class="screen" id="scr-shop" style="display:none">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:4px;color:var(--txt)">🛒 СПИСОК ПОКУПОК</div>
-  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:12px">Цены — Минск, май 2026</div>
-  <div class="shop-week-sel" id="shopWeekSel"></div>
-  <div id="shopContent"></div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:10px;color:var(--txt)">🛒 ПОКУПКИ</div>
+
+  <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--sur2);border-radius:10px;padding:3px">
+    <button class="vtab on" id="shopTab-my" onclick="switchShopTab('my')">🛍 Мои покупки</button>
+    <button class="vtab" id="shopTab-weekly" onclick="switchShopTab('weekly')">📋 По неделям</button>
+  </div>
+
+  <!-- MY PURCHASES -->
+  <div id="shopMy">
+    <div class="card" style="margin-bottom:10px"><div class="sec">
+      <div class="sec-lbl">➕ Добавить товар</div>
+      <div style="position:relative;margin-bottom:8px">
+        <input id="myShopName" placeholder="Название товара (гречка, курица...)"
+          style="width:100%;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:10px;padding:9px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;outline:none"
+          oninput="searchShopSuggest(this.value)">
+        <div id="shopSuggest" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:50;background:var(--sur2);border:1px solid var(--bor2);border-radius:10px;margin-top:3px;overflow:hidden;max-height:180px;overflow-y:auto"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input id="myShopQty" placeholder="кол-во (500г, 1кг...)"
+          style="flex:1;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:10px;padding:9px 10px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <input id="myShopPrice" placeholder="цена BYN" type="number" step="0.01"
+          style="flex:1;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:10px;padding:9px 10px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+      <div style="margin-bottom:8px">
+        <select id="myShopCat" style="width:100%;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:10px;padding:9px 10px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+          <option>Мясо и рыба</option><option>Молочное</option><option>Крупы и макароны</option>
+          <option>Овощи и фрукты</option><option>Масла и соусы</option><option>Прочее</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="addMyShopItem()" style="flex:2;padding:10px;background:var(--acc);border:none;border-radius:10px;color:white;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase">＋ Добавить</button>
+        <button onclick="calcShopItemKBZHU()" style="flex:1;padding:10px;background:var(--grn-d);border:1px solid var(--grn);border-radius:10px;color:var(--grn);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">🧮 КБЖУ</button>
+      </div>
+      <div id="shopKbzhuResult" style="display:none;margin-top:10px;padding:10px;background:var(--acc-d);border-radius:10px;border:1px solid rgba(79,142,247,.2)"></div>
+    </div></div>
+
+    <div id="aiShopItems"></div>
+
+    <div class="card"><div class="sec">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="sec-lbl" style="margin:0">Список</div>
+        <button onclick="clearMyShop()" style="font-size:10px;color:var(--txt3);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700">Очистить всё</button>
+      </div>
+      <div id="myShopList"></div>
+    </div></div>
+
+    <div class="shop-total" id="myShopTotal" style="margin-top:10px;display:none">
+      <div class="shop-total-lbl">Итого к покупке</div>
+      <div class="shop-total-val" id="myShopTotalVal">0.00 BYN</div>
+    </div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div id="shopWeekly" style="display:none">
+    <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:10px">Готовые списки по неделям · Цены Минск</div>
+    <div class="shop-week-sel" id="shopWeekSel"></div>
+    <div id="shopContent"></div>
+  </div>
 </div>
 
 <!-- SCREEN: PROGRESS -->
@@ -1406,7 +1472,7 @@ function showScreen(id){
   if(hdr)hdr.style.display=(id==='day'||id==='month')?'block':'none';
   // init screens
   if(id==='tracker'){updateTracker();renderFoodLog();}
-  if(id==='shop'){renderShopWeekSel();renderShopList();}
+  if(id==='shop'){renderMyShop();}
   if(id==='progress'){renderMeasures();updateStats();setTimeout(renderMainChart,50);}
   if(id==='ai'){loadAIHistory();}
   if(id==='menu'){renderMenuDayTabs();renderMenuSlots();renderMenuTotals();}
@@ -2249,7 +2315,257 @@ saveMeasures = function() {
   renderMainChart();
 };
 
-// ==================== FOOD DATABASE ======================
+
+// ==================== MY SHOPPING LIST ====================
+let curShopTab = 'my';
+
+function switchShopTab(tab) {
+  curShopTab = tab;
+  document.getElementById('shopMy').style.display = tab === 'my' ? 'block' : 'none';
+  document.getElementById('shopWeekly').style.display = tab === 'weekly' ? 'block' : 'none';
+  document.getElementById('shopTab-my').classList.toggle('on', tab === 'my');
+  document.getElementById('shopTab-weekly').classList.toggle('on', tab === 'weekly');
+  if (tab === 'weekly') { renderShopWeekSel(); renderShopList(); }
+  if (tab === 'my') renderMyShop();
+}
+
+function getMyShop() { return LS('my_shop_list', []); }
+function saveMyShop(list) { LSset('my_shop_list', list); }
+
+function addMyShopItem() {
+  const name = document.getElementById('myShopName')?.value.trim();
+  const qty = document.getElementById('myShopQty')?.value.trim() || '1 шт';
+  const price = parseFloat(document.getElementById('myShopPrice')?.value) || 0;
+  const cat = document.getElementById('myShopCat')?.value || 'Прочее';
+  if (!name) return;
+
+  const list = getMyShop();
+  list.push({ name, qty, price, cat, checked: false, id: Date.now(), added: new Date().toLocaleDateString('ru') });
+  saveMyShop(list);
+
+  // Clear inputs
+  ['myShopName','myShopQty','myShopPrice'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('shopSuggest').style.display = 'none';
+  renderMyShop();
+}
+
+function toggleMyShopItem(id) {
+  const list = getMyShop();
+  const item = list.find(i => i.id === id);
+  if (item) item.checked = !item.checked;
+  saveMyShop(list);
+  renderMyShop();
+}
+
+function deleteMyShopItem(id) {
+  saveMyShop(getMyShop().filter(i => i.id !== id));
+  renderMyShop();
+}
+
+function clearMyShop() {
+  if (confirm('Очистить весь список?')) { saveMyShop([]); renderMyShop(); }
+}
+
+function renderMyShop() {
+  const list = getMyShop();
+  const aiList = LS('ai_shopping_list', []);
+  const myEl = document.getElementById('myShopList');
+  const aiEl = document.getElementById('aiShopItems');
+  const totalEl = document.getElementById('myShopTotal');
+  const totalValEl = document.getElementById('myShopTotalVal');
+
+  // AI-added items
+  if (aiEl) {
+    if (aiList.length > 0) {
+      aiEl.innerHTML = `<div class="card" style="margin-bottom:10px"><div class="sec">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="sec-lbl" style="margin:0">🤖 Добавлено тренером</div>
+          <button onclick="mergeAiToMyShop()" style="font-size:10px;color:var(--acc);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:800">Добавить всё →</button>
+        </div>
+        ${aiList.map((item,i) => `
+          <div class="my-shop-item">
+            <div class="my-shop-name">${escapeHtml(item.name)}</div>
+            <div class="my-shop-qty">${escapeHtml(item.qty||'')}</div>
+            ${item.price ? `<div class="my-shop-price">~${item.price} BYN</div>` : ''}
+            <button class="my-shop-del" onclick="removeAiShopItem(${i})">✕</button>
+          </div>`).join('')}
+      </div></div>`;
+    } else {
+      aiEl.innerHTML = '';
+    }
+  }
+
+  if (!myEl) return;
+
+  if (!list.length) {
+    myEl.innerHTML = `<div style="text-align:center;padding:20px;font-size:13px;color:var(--txt3)">
+      Список пуст. Добавь товары вручную или попроси тренера 🤖
+    </div>`;
+    if (totalEl) totalEl.style.display = 'none';
+    return;
+  }
+
+  // Group by category
+  const byCat = {};
+  list.forEach(item => {
+    if (!byCat[item.cat]) byCat[item.cat] = [];
+    byCat[item.cat].push(item);
+  });
+
+  let html = '';
+  let total = 0;
+  Object.entries(byCat).forEach(([cat, items]) => {
+    html += `<div class="shop-cat-header">${cat}</div>`;
+    items.forEach(item => {
+      if (!item.checked) total += item.price || 0;
+      html += `
+        <div class="my-shop-item${item.checked ? ' checked-item' : ''}">
+          <div class="my-shop-cb${item.checked ? ' on' : ''}" onclick="toggleMyShopItem(${item.id})">${item.checked ? '✓' : ''}</div>
+          <div class="my-shop-name">${escapeHtml(item.name)}</div>
+          <div class="my-shop-qty">${escapeHtml(item.qty)}</div>
+          ${item.price ? `<div class="my-shop-price">${item.price.toFixed(2)} BYN</div>` : ''}
+          <button class="my-shop-del" onclick="deleteMyShopItem(${item.id})">✕</button>
+        </div>`;
+    });
+  });
+
+  myEl.innerHTML = html;
+  if (totalEl) totalEl.style.display = total > 0 ? 'block' : 'none';
+  if (totalValEl) totalValEl.textContent = total.toFixed(2) + ' BYN';
+}
+
+function mergeAiToMyShop() {
+  const aiList = LS('ai_shopping_list', []);
+  const myList = getMyShop();
+  aiList.forEach(item => {
+    myList.push({
+      name: item.name, qty: item.qty || '1 шт',
+      price: item.price || 0, cat: item.category || 'Прочее',
+      checked: false, id: Date.now() + Math.random(),
+      added: new Date().toLocaleDateString('ru')
+    });
+  });
+  saveMyShop(myList);
+  LSset('ai_shopping_list', []);
+  renderMyShop();
+  showToast('✅ Добавлено в список покупок!', 'green');
+}
+
+function removeAiShopItem(idx) {
+  const list = LS('ai_shopping_list', []);
+  list.splice(idx, 1);
+  LSset('ai_shopping_list', list);
+  renderMyShop();
+}
+
+// Search suggestions from FOOD_DB
+function searchShopSuggest(query) {
+  const el = document.getElementById('shopSuggest');
+  if (!query || query.length < 2) { el.style.display = 'none'; return; }
+  const q = query.toLowerCase();
+  const results = (typeof FOOD_DB !== 'undefined' ? FOOD_DB : [])
+    .filter(f => f.n.toLowerCase().includes(q)).slice(0, 6);
+  if (!results.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = results.map(f => `
+    <div onclick="selectShopSuggest('${escapeHtml(f.n)}')"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bor);font-size:13px;font-weight:600;display:flex;justify-content:space-between"
+      onmouseover="this.style.background='rgba(79,142,247,.1)'" onmouseout="this.style.background=''">
+      <span>${escapeHtml(f.n)}</span>
+      <span style="color:var(--txt3);font-size:11px">${f.k} ккал/100г</span>
+    </div>`).join('');
+}
+
+function selectShopSuggest(name) {
+  const el = document.getElementById('myShopName');
+  if (el) el.value = name;
+  document.getElementById('shopSuggest').style.display = 'none';
+  // Auto-fill quantity
+  const qEl = document.getElementById('myShopQty');
+  if (qEl && !qEl.value) qEl.value = '500г';
+}
+
+// Calculate KBZHU for item in search field
+async function calcShopItemKBZHU() {
+  const name = document.getElementById('myShopName')?.value.trim();
+  const qty = document.getElementById('myShopQty')?.value.trim();
+  if (!name) { showToast('Введи название продукта', 'yellow'); return; }
+
+  const resultEl = document.getElementById('shopKbzhuResult');
+  if (resultEl) { resultEl.style.display = 'block'; resultEl.innerHTML = '⏳ Ищу КБЖУ...'; }
+
+  // First check FOOD_DB
+  const q = name.toLowerCase();
+  const found = (typeof FOOD_DB !== 'undefined' ? FOOD_DB : []).find(f => f.n.toLowerCase().includes(q));
+
+  if (found) {
+    const grams = parseFloat(qty) || 100;
+    const mult = grams / 100;
+    const kcal = Math.round(found.k * mult);
+    const b = (found.b * mult).toFixed(1);
+    const j = (found.j * mult).toFixed(1);
+    const u = (found.u * mult).toFixed(1);
+    if (resultEl) resultEl.innerHTML = `
+      <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${found.n} ${grams}г</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="background:var(--org-d);color:var(--org);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">${kcal} ккал</span>
+        <span style="background:var(--acc-d);color:var(--acc);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Б:${b}г</span>
+        <span style="background:var(--grn-d);color:var(--grn);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Ж:${j}г</span>
+        <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">У:${u}г</span>
+      </div>
+      <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${escapeHtml(found.n)}')"
+        style="width:100%;margin-top:8px;padding:6px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+        + В дневник питания
+      </button>`;
+    return;
+  }
+
+  // Ask AI trainer to calculate
+  try {
+    const grams = parseFloat(qty) || 100;
+    const resp = await fetch('/api/ai-trainer', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message: `Рассчитай КБЖУ для "${name}" ${grams}г. Используй инструмент search_product_kbzhu.`,
+        user_id: TG_USER_ID
+      })
+    });
+    const data = await resp.json();
+    if (data.tool_results && data.tool_results.length > 0) {
+      const r = data.tool_results[0];
+      if (r.ui_action === 'show_kbzhu') {
+        if (resultEl) resultEl.innerHTML = `
+          <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${escapeHtml(r.dish)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:var(--org-d);color:var(--org);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">${r.total_kcal} ккал</span>
+            <span style="background:var(--acc-d);color:var(--acc);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Б:${r.protein}г</span>
+            <span style="background:var(--grn-d);color:var(--grn);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Ж:${r.fat}г</span>
+            <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">У:${r.carbs}г</span>
+          </div>
+          <button onclick="addKBZHUToDiary(${r.total_kcal},${r.protein},${r.fat},${r.carbs},'${escapeHtml(name)}')"
+            style="width:100%;margin-top:8px;padding:6px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+            + В дневник питания
+          </button>`;
+        handleToolResult(r);
+      }
+    } else {
+      if (resultEl) resultEl.innerHTML = `<div style="color:var(--txt2);font-size:12px">${escapeHtml(data.reply || 'Не удалось найти КБЖУ')}</div>`;
+    }
+  } catch(e) {
+    if (resultEl) resultEl.innerHTML = '<div style="color:var(--red);font-size:12px">⚠️ Ошибка поиска</div>';
+  }
+}
+
+// Close suggest on outside click
+document.addEventListener('click', e => {
+  const s = document.getElementById('shopSuggest');
+  if (s && !s.contains(e.target) && e.target.id !== 'myShopName') s.style.display = 'none';
+});
+
+// ==================== FOOD DATABASE ========================
 const FOOD_DB = [
   // Мясо и птица
   {n:'Куриная грудка (варёная)',k:165,b:31,j:3.6,u:0},

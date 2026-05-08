@@ -515,6 +515,26 @@ AI_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "search_product_kbzhu",
+            "description": "Ищет КБЖУ продукта или блюда по названию и возвращает данные на 100г. Используй когда пользователь спрашивает КБЖУ неизвестного продукта или хочет добавить что-то в дневник/меню.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_name": {"type": "string", "description": "Название продукта или блюда"},
+                    "grams": {"type": "number", "description": "Количество в граммах которое нужно посчитать"},
+                    "kcal_per_100g": {"type": "number", "description": "Калории на 100г (используй свои знания)"},
+                    "protein_per_100g": {"type": "number", "description": "Белки на 100г"},
+                    "fat_per_100g": {"type": "number", "description": "Жиры на 100г"},
+                    "carbs_per_100g": {"type": "number", "description": "Углеводы на 100г"},
+                    "add_to_diary": {"type": "boolean", "description": "true если нужно сразу добавить в дневник"}
+                },
+                "required": ["product_name", "grams", "kcal_per_100g", "protein_per_100g", "fat_per_100g", "carbs_per_100g"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "add_to_menu",
             "description": "Добавляет блюдо в конструктор меню на конкретный день",
             "parameters": {
@@ -565,25 +585,28 @@ async def execute_tool(tool_name: str, args: dict, user_id: int = None) -> dict:
         }
 
     elif tool_name == "add_food_to_diary":
-        # Save to user data for frontend to pick up
+        from datetime import timezone, timedelta, date as date_cls
+        utc_now = datetime.now(timezone.utc)
+        minsk = utc_now + timedelta(hours=3)
+        day = minsk.day
+        item = {
+            "n": f"{args['name']} {args.get('grams',100)}г",
+            "k": args.get("kcal", 0),
+            "b": args.get("protein", 0),
+            "j": args.get("fat", 0),
+            "u": args.get("carbs", 0)
+        }
         if user_id:
-            utc_now = datetime.now(timezone.utc)
-            minsk = utc_now + timedelta(hours=3)
-            day = minsk.day
-            today_key = f"day_{day}_" + date.today().strftime("%a %b %d %Y") + "_foods"
+            today_key = f"day_{day}_" + date_cls.today().strftime("%a %b %d %Y") + "_foods"
             from database import get_user_data, save_user_data
             foods = await get_user_data(user_id, today_key) or []
-            foods.append({
-                "n": f"{args['name']} {args['grams']}г",
-                "k": args["kcal"], "b": args["protein"],
-                "j": args["fat"], "u": args["carbs"]
-            })
+            foods.append(item)
             await save_user_data(user_id, today_key, foods)
         return {
             "success": True,
             "ui_action": "add_to_diary",
-            "item": args,
-            "message": f"Добавлено в дневник: {args['name']} {args['grams']}г — {args['kcal']} ккал"
+            "item": {**args, **item},
+            "message": f"✅ Добавлено в дневник: {args['name']} {args.get('grams',100)}г — {args.get('kcal',0)} ккал"
         }
 
     elif tool_name == "update_product_price":
@@ -610,22 +633,24 @@ async def execute_tool(tool_name: str, args: dict, user_id: int = None) -> dict:
         }
 
     elif tool_name == "add_to_shopping_list":
+        item = {
+            "name": args["product_name"],
+            "qty": args.get("quantity", "1 шт"),
+            "price": args.get("price_byn", 0),
+            "category": args.get("category", "Прочее"),
+            "added": datetime.now().strftime("%d.%m"),
+            "checked": False
+        }
         if user_id:
             from database import get_user_data, save_user_data
             shop = await get_user_data(user_id, "ai_shopping_list") or []
-            shop.append({
-                "name": args["product_name"],
-                "qty": args["quantity"],
-                "price": args.get("price_byn", 0),
-                "category": args.get("category", "Прочее"),
-                "added": datetime.now().strftime("%d.%m")
-            })
+            shop.append(item)
             await save_user_data(user_id, "ai_shopping_list", shop)
         return {
             "success": True,
             "ui_action": "add_to_shop",
-            "item": args,
-            "message": f"Добавлено в список покупок: {args['product_name']} {args['quantity']}"
+            "item": item,
+            "message": f"✅ Добавлено в список покупок: {args['product_name']} {args.get('quantity','')}"
         }
 
     elif tool_name == "add_to_menu":
@@ -656,6 +681,47 @@ async def execute_tool(tool_name: str, args: dict, user_id: int = None) -> dict:
             "dish": args["dish_name"],
             "message": f"Добавлено в меню {day} мая: {args['dish_name']} — {args['kcal']} ккал"
         }
+
+    elif tool_name == "search_product_kbzhu":
+        grams = args.get("grams", 100)
+        mult = grams / 100
+        kcal = round(args.get("kcal_per_100g", 0) * mult)
+        protein = round(args.get("protein_per_100g", 0) * mult, 1)
+        fat = round(args.get("fat_per_100g", 0) * mult, 1)
+        carbs = round(args.get("carbs_per_100g", 0) * mult, 1)
+        name = args["product_name"]
+
+        result = {
+            "success": True,
+            "ui_action": "show_kbzhu",
+            "dish": f"{name} {grams}г",
+            "total_kcal": kcal,
+            "protein": protein,
+            "fat": fat,
+            "carbs": carbs,
+            "total_grams": grams,
+            "breakdown": [
+                f"{name} {grams}г → {kcal} ккал",
+                f"Б:{protein}г / Ж:{fat}г / У:{carbs}г",
+                f"(на 100г: {args.get('kcal_per_100g',0)} ккал)"
+            ],
+            "message": f"КБЖУ для {name} {grams}г: {kcal} ккал"
+        }
+
+        # Auto-add to diary if requested
+        if args.get("add_to_diary") and user_id:
+            from datetime import timezone, timedelta, date as date_cls
+            utc_now = datetime.now(timezone.utc)
+            minsk = utc_now + timedelta(hours=3)
+            day = minsk.day
+            today_key = f"day_{day}_" + date_cls.today().strftime("%a %b %d %Y") + "_foods"
+            from database import get_user_data, save_user_data
+            foods = await get_user_data(user_id, today_key) or []
+            foods.append({"n": f"{name} {grams}г", "k": kcal, "b": protein, "j": fat, "u": carbs})
+            await save_user_data(user_id, today_key, foods)
+            result["ui_action"] = "show_kbzhu_and_add"
+
+        return result
 
     return {"success": False, "message": "Неизвестный инструмент"}
 
