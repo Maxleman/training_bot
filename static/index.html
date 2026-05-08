@@ -1472,7 +1472,7 @@ function showScreen(id){
   if(hdr)hdr.style.display=(id==='day'||id==='month')?'block':'none';
   // init screens
   if(id==='tracker'){updateTracker();renderFoodLog();}
-  if(id==='shop'){renderMyShop();}
+  if(id==='shop'){curShopTab='my';renderMyShop();}
   if(id==='progress'){renderMeasures();updateStats();setTimeout(renderMainChart,50);}
   if(id==='ai'){loadAIHistory();}
   if(id==='menu'){renderMenuDayTabs();renderMenuSlots();renderMenuTotals();}
@@ -2321,11 +2321,17 @@ let curShopTab = 'my';
 
 function switchShopTab(tab) {
   curShopTab = tab;
-  document.getElementById('shopMy').style.display = tab === 'my' ? 'block' : 'none';
-  document.getElementById('shopWeekly').style.display = tab === 'weekly' ? 'block' : 'none';
-  document.getElementById('shopTab-my').classList.toggle('on', tab === 'my');
-  document.getElementById('shopTab-weekly').classList.toggle('on', tab === 'weekly');
-  if (tab === 'weekly') { renderShopWeekSel(); renderShopList(); }
+  const myEl = document.getElementById('shopMy');
+  const weekEl = document.getElementById('shopWeekly');
+  if (myEl) myEl.style.display = tab === 'my' ? 'block' : 'none';
+  if (weekEl) weekEl.style.display = tab === 'weekly' ? 'block' : 'none';
+  const myBtn = document.getElementById('shopTab-my');
+  const weekBtn = document.getElementById('shopTab-weekly');
+  if (myBtn) myBtn.classList.toggle('on', tab === 'my');
+  if (weekBtn) weekBtn.classList.toggle('on', tab === 'weekly');
+  if (tab === 'weekly') {
+    setTimeout(() => { renderShopWeekSel(); renderShopList(); }, 50);
+  }
   if (tab === 'my') renderMyShop();
 }
 
@@ -2333,22 +2339,38 @@ function getMyShop() { return LS('my_shop_list', []); }
 function saveMyShop(list) { LSset('my_shop_list', list); }
 
 function addMyShopItem() {
-  const name = document.getElementById('myShopName')?.value.trim();
-  const qty = document.getElementById('myShopQty')?.value.trim() || '1 шт';
-  const price = parseFloat(document.getElementById('myShopPrice')?.value) || 0;
-  const cat = document.getElementById('myShopCat')?.value || 'Прочее';
-  if (!name) return;
+  const nameEl = document.getElementById('myShopName');
+  const qtyEl = document.getElementById('myShopQty');
+  const priceEl = document.getElementById('myShopPrice');
+  const catEl = document.getElementById('myShopCat');
+
+  const name = nameEl?.value.trim();
+  const qty = qtyEl?.value.trim() || '1 шт';  // keep as full string: "1кг", "500г"
+  const price = parseFloat(priceEl?.value) || 0;
+  const cat = catEl?.value || 'Прочее';
+
+  if (!name) { showToast('Введи название товара', 'yellow'); return; }
 
   const list = getMyShop();
-  list.push({ name, qty, price, cat, checked: false, id: Date.now(), added: new Date().toLocaleDateString('ru') });
+  list.push({
+    name, qty, price, cat,
+    checked: false,
+    id: Date.now(),
+    added: new Date().toLocaleDateString('ru')
+  });
   saveMyShop(list);
 
   // Clear inputs
-  ['myShopName','myShopQty','myShopPrice'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('shopSuggest').style.display = 'none';
+  if (nameEl) nameEl.value = '';
+  if (qtyEl) qtyEl.value = '';
+  if (priceEl) priceEl.value = '';
+  const sug = document.getElementById('shopSuggest');
+  if (sug) sug.style.display = 'none';
+  const kbEl = document.getElementById('shopKbzhuResult');
+  if (kbEl) kbEl.style.display = 'none';
+
   renderMyShop();
+  showToast('✅ Добавлено: ' + name + ' ' + qty, 'green');
 }
 
 function toggleMyShopItem(id) {
@@ -2399,10 +2421,15 @@ function renderMyShop() {
 
   if (!myEl) return;
 
-  if (!list.length) {
+  if (!list.length && !aiList.length) {
     myEl.innerHTML = `<div style="text-align:center;padding:20px;font-size:13px;color:var(--txt3)">
-      Список пуст. Добавь товары вручную или попроси тренера 🤖
+      📋 Список пуст.<br><br>Добавь товары вручную выше,<br>или напиши тренеру "добавь гречку в покупки" 🤖
     </div>`;
+    if (totalEl) totalEl.style.display = 'none';
+    return;
+  }
+  if (!list.length) {
+    myEl.innerHTML = '';
     if (totalEl) totalEl.style.display = 'none';
     return;
   }
@@ -2488,6 +2515,19 @@ function selectShopSuggest(name) {
 }
 
 // Calculate KBZHU for item in search field
+function parseGramsFromQty(qty) {
+  if (!qty) return 100;
+  const str = qty.toLowerCase().replace(/\s/g, '');
+  // "1кг" -> 1000, "500г" -> 500, "1.5кг" -> 1500
+  const kgMatch = str.match(/([\d.]+)кг/);
+  if (kgMatch) return parseFloat(kgMatch[1]) * 1000;
+  const gMatch = str.match(/([\d.]+)г/);
+  if (gMatch) return parseFloat(gMatch[1]);
+  const numMatch = str.match(/^([\d.]+)/);
+  if (numMatch) return parseFloat(numMatch[1]);
+  return 100;
+}
+
 async function calcShopItemKBZHU() {
   const name = document.getElementById('myShopName')?.value.trim();
   const qty = document.getElementById('myShopQty')?.value.trim();
@@ -2501,7 +2541,7 @@ async function calcShopItemKBZHU() {
   const found = (typeof FOOD_DB !== 'undefined' ? FOOD_DB : []).find(f => f.n.toLowerCase().includes(q));
 
   if (found) {
-    const grams = parseFloat(qty) || 100;
+    const grams = parseGramsFromQty(qty) || 100;
     const mult = grams / 100;
     const kcal = Math.round(found.k * mult);
     const b = (found.b * mult).toFixed(1);
@@ -2524,7 +2564,7 @@ async function calcShopItemKBZHU() {
 
   // Ask AI trainer to calculate
   try {
-    const grams = parseFloat(qty) || 100;
+    const grams = parseGramsFromQty(qty) || 100;
     const resp = await fetch('/api/ai-trainer', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
