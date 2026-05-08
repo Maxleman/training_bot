@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Максим · Тренировки Май 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c10;--sur:#111318;--sur2:#181c24;--bor:#1e2330;--bor2:#252c3a;
+  --acc:#4f8ef7;--acc-d:#0e1e3a;--grn:#3dd68c;--grn-d:#0a2218;
+  --pur:#9d7ff5;--pur-d:#180e35;--org:#f5924f;--org-d:#2a1508;
+  --yel:#f5c842;--red:#f56060;--txt:#eef0f6;--txt2:#8892a4;--txt3:#4a5568;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+
+/* NAV BAR */
+.navbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:300;
+  background:rgba(10,12,16,.96);backdrop-filter:blur(20px);
+  border-top:1px solid var(--bor);
+  display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom));
+}
+.nb{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 0;cursor:pointer;border:none;background:transparent;
+  color:var(--txt3);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;transition:color .2s;
+}
+.nb.on{color:var(--acc)}
+.nb-ico{font-size:20px;line-height:1}
+
+/* HEADER */
+.header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(10,12,16,.94);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bor);padding:12px 14px 0;
+}
+.hrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.logo{
+  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;
+  background:linear-gradient(135deg,var(--acc),var(--pur));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hlbl{font-size:10px;color:var(--txt2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+
+.cal-strip{display:flex;gap:5px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+.cal-strip::-webkit-scrollbar{display:none}
+.cday{
+  flex-shrink:0;width:44px;border-radius:10px;display:flex;flex-direction:column;
+  align-items:center;padding:6px 0 5px;cursor:pointer;transition:all .18s;
+  border:1.5px solid transparent;background:var(--sur2);
+}
+.cday-dow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3)}
+.cday-num{font-size:17px;font-weight:800;line-height:1.1}
+.cday-pip{width:5px;height:5px;border-radius:50%;margin-top:2px;background:var(--bor2)}
+.cday.t{background:var(--acc-d)}.cday.t .cday-pip{background:var(--acc)}
+.cday.d{background:var(--grn-d)}.cday.d .cday-pip{background:var(--grn)}
+.cday.n{background:var(--pur-d)}.cday.n .cday-pip{background:var(--pur)}
+.cday.sel{border-color:var(--acc)!important;transform:scale(1.06)}
+.cday.tod .cday-num{color:var(--acc)}
+.cday.past{opacity:.35}
+
+/* SCREENS */
+.screen{display:none;max-width:700px;margin:0 auto;padding:14px 14px 80px}
+.screen.on{display:block}
+
+/* CARDS */
+.card{background:var(--sur);border-radius:16px;border:1px solid var(--bor);margin-bottom:10px;overflow:hidden;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--bor)}
+.day-big{font-family:'Bebas Neue',sans-serif;font-size:50px;line-height:1;min-width:50px;text-align:center}
+.day-big.ct{color:var(--acc)}.day-big.cd{color:var(--grn)}.day-big.cn{color:var(--pur)}.day-big.cr{color:var(--bor2)}
+.head-info{flex:1}
+.head-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt2)}
+.head-title{font-size:16px;font-weight:800;margin-top:2px}
+.head-time{font-size:11px;color:var(--txt2);margin-top:2px}
+.shift-pill{font-size:10px;font-weight:800;text-transform:uppercase;padding:3px 9px;border-radius:7px;flex-shrink:0}
+.sp-d{background:var(--grn-d);color:var(--grn);border:1px solid #1a4030}
+.sp-n{background:var(--pur-d);color:var(--pur);border:1px solid #2a1a50}
+.sp-r{background:var(--sur2);color:var(--txt3);border:1px solid var(--bor)}
+
+.sec{padding:14px 16px}.sec+.sec{border-top:1px solid var(--bor)}
+.sec-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--txt3);margin-bottom:10px}
+
+/* NAV ROW */
+.nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.nav-btn{
+  width:36px;height:36px;border-radius:8px;border:1.5px solid var(--bor2);
+  background:var(--sur);color:var(--txt2);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .18s;
+}
+.nav-btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.nav-btn:disabled{opacity:.25;cursor:default}
+.nav-mid{font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
+
+/* EXERCISE */
+.ex-item{background:var(--sur2);border-radius:12px;border:1px solid var(--bor);margin-bottom:7px;overflow:hidden}
+.ex-head{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer}
+.ex-ico{width:32px;height:32px;border-radius:8px;background:var(--acc-d);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ex-name{flex:1;font-size:13px;font-weight:700}
+.ex-sets{font-size:11px;font-weight:800;color:var(--acc);background:var(--acc-d);padding:2px 8px;border-radius:6px;white-space:nowrap;margin-right:3px}
+.ex-arr{font-size:11px;color:var(--txt3);transition:transform .2s}
+.ex-arr.open{transform:rotate(90deg)}
+.ex-body{display:none;border-top:1px solid var(--bor);padding:0 13px 13px}
+.ex-body.open{display:block}
+.sub-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin:11px 0 7px}
+.sub-lbl.a{color:var(--acc)}.sub-lbl.o{color:var(--org)}.sub-lbl.g{color:var(--grn)}
+.step-row{display:flex;gap:8px;margin-bottom:6px;align-items:flex-start}
+.step-n{width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-n.a{background:var(--acc-d);color:var(--acc)}.step-n.o{background:var(--org-d);color:var(--org)}
+.step-t{font-size:12px;color:var(--txt2);line-height:1.5;font-weight:500}
+.ex-tip{margin-top:9px;padding:8px 11px;background:rgba(245,146,79,.08);border-radius:8px;border-left:3px solid var(--org);font-size:11px;color:var(--txt2);line-height:1.5}
+.ex-tip b{color:var(--org)}
+
+/* SETS TRACKER */
+.sets-track{margin-top:10px;padding:10px 12px;background:var(--acc-d);border-radius:10px;border:1px solid rgba(79,142,247,.2)}
+.sets-track-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sets-track-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--acc)}
+.sets-dots{display:flex;gap:6px;flex-wrap:wrap}
+.set-dot{
+  width:32px;height:32px;border-radius:8px;border:2px solid rgba(79,142,247,.3);
+  background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all .15s;color:transparent;
+}
+.set-dot.done{background:var(--acc);border-color:var(--acc);color:white;font-size:14px}
+.prog-input{display:flex;align-items:center;gap:6px;margin-top:8px}
+.prog-input input{
+  flex:1;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
+  border-radius:7px;padding:6px 10px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;
+  font-weight:600;outline:none;
+}
+.prog-input input:focus{border-color:var(--acc)}
+.prog-input input::placeholder{color:var(--txt3)}
+.save-btn{
+  padding:6px 12px;background:var(--acc);border:none;border-radius:7px;
+  color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;
+  white-space:nowrap;
+}
+
+/* TIMER */
+.timer-wrap{margin-top:10px;padding:12px;background:rgba(61,214,140,.06);border-radius:10px;border:1px solid rgba(61,214,140,.15)}
+.timer-display{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--grn);letter-spacing:2px;line-height:1}
+.timer-sub{text-align:center;font-size:10px;color:var(--txt3);margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.timer-btns{display:flex;gap:6px;margin-top:10px}
+.t-btn{
+  flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+}
+.t-start{background:var(--grn);color:white}
+.t-pause{background:var(--sur2);color:var(--txt2);border:1px solid var(--bor2)}
+.t-reset{background:var(--sur2);color:var(--txt3);border:1px solid var(--bor)}
+.rest-timer-wrap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.rt-btn{
+  padding:6px 12px;border-radius:7px;border:1px solid var(--bor2);background:var(--sur2);
+  color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+.rt-btn:hover{border-color:var(--acc);color:var(--acc)}
+
+/* MEAL */
+.meal-item{background:var(--sur2);border-radius:12px;border:1px solid var(--bor);margin-bottom:7px;overflow:hidden}
+.meal-head{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer}
+.meal-ico{width:32px;height:32px;border-radius:8px;background:var(--org-d);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.meal-info{flex:1}
+.meal-time{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.meal-name{font-size:13px;font-weight:700;margin-top:1px}
+.meal-right{display:flex;align-items:center;gap:4px}
+.meal-kcal{font-size:10px;font-weight:800;color:var(--org);background:var(--org-d);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.meal-price{font-size:10px;font-weight:800;color:var(--yel);background:rgba(245,200,66,.1);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.meal-arr{font-size:11px;color:var(--txt3);transition:transform .2s;margin-left:2px}
+.meal-arr.open{transform:rotate(90deg)}
+.meal-body{display:none;border-top:1px solid var(--bor);padding:0 13px 13px}
+.meal-body.open{display:block}
+.ingr-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bor);font-size:12px}
+.ingr-row:last-child{border-bottom:none}
+.ingr-name{color:var(--txt);font-weight:500}
+.ingr-qty{color:var(--txt2);font-weight:700;font-size:11px}
+.ingr-price{color:var(--yel);font-weight:700;font-size:10px;margin-left:6px}
+.cook-row{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+.cook-n{width:20px;height:20px;border-radius:5px;background:var(--org-d);color:var(--org);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.cook-t{font-size:12px;color:var(--txt2);line-height:1.5;font-weight:500}
+.macro-row{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.mc{padding:3px 9px;border-radius:7px;font-size:10px;font-weight:800}
+.mc-b{background:var(--acc-d);color:var(--acc)}.mc-j{background:rgba(61,214,140,.1);color:var(--grn)}
+.mc-u{background:rgba(245,200,66,.1);color:var(--yel)}.mc-k{background:var(--org-d);color:var(--org)}
+.meal-alts{margin-top:10px;padding:8px;background:rgba(157,127,245,.06);border-radius:8px;border:1px solid rgba(157,127,245,.15)}
+.alts-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--pur);margin-bottom:6px}
+.alt-btn{
+  display:inline-block;padding:4px 10px;border-radius:6px;background:var(--pur-d);
+  color:var(--pur);font-size:11px;font-weight:700;cursor:pointer;margin:2px;border:1px solid rgba(157,127,245,.2);
+}
+
+/* LOG FOOD */
+.log-food-wrap{margin-top:10px;padding:10px;background:rgba(245,200,66,.05);border-radius:10px;border:1px solid rgba(245,200,66,.15)}
+.log-food-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--yel);margin-bottom:7px}
+.log-food-row{display:flex;gap:6px}
+.log-food-row input{flex:1;background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.2);border-radius:7px;padding:6px 10px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;outline:none}
+.log-food-row input:focus{border-color:var(--yel)}
+.log-food-row input::placeholder{color:var(--txt3)}
+.log-btn{padding:6px 12px;background:var(--yel);border:none;border-radius:7px;color:#1a1400;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif}
+.logged-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bor);font-size:12px}
+.logged-item:last-child{border-bottom:none}
+.logged-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:14px;padding:0 4px}
+
+/* PROGRESS SCREEN */
+.prog-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.pstat{background:var(--sur);border-radius:12px;border:1px solid var(--bor);padding:12px;text-align:center}
+.pstat-num{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;color:var(--acc)}
+.pstat-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-top:2px}
+
+.prog-chart{background:var(--sur);border-radius:12px;border:1px solid var(--bor);padding:14px;margin-bottom:10px}
+.chart-title{font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:80px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar{width:100%;border-radius:4px 4px 0 0;background:var(--acc-d);transition:height .4s ease;min-height:3px}
+.bar.filled{background:var(--acc)}
+.bar-lbl{font-size:8px;color:var(--txt3);font-weight:700}
+
+/* MEASURES */
+.meas-form{background:var(--sur);border-radius:12px;border:1px solid var(--bor);padding:14px;margin-bottom:10px}
+.meas-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);margin-bottom:12px}
+.meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meas-field label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);display:block;margin-bottom:4px}
+.meas-field input{
+  width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:8px;
+  padding:8px 10px;color:var(--txt);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:700;outline:none;
+}
+.meas-field input:focus{border-color:var(--acc)}
+.meas-save{width:100%;margin-top:10px;padding:10px;background:var(--acc);border:none;border-radius:9px;color:white;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.meas-history{background:var(--sur);border-radius:12px;border:1px solid var(--bor);padding:14px;margin-bottom:10px}
+.meas-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor);font-size:12px}
+.meas-row:last-child{border-bottom:none}
+.meas-date{color:var(--txt2);font-weight:600}
+.meas-vals{display:flex;gap:8px;flex-wrap:wrap}
+.meas-val{color:var(--txt);font-weight:700}
+.meas-val span{color:var(--txt3);font-weight:500}
+
+/* WATER/CALORIES TRACKER */
+.tracker-card{background:var(--sur);border-radius:14px;border:1px solid var(--bor);padding:14px;margin-bottom:10px}
+.tracker-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tracker-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt2)}
+.tracker-val{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:var(--acc)}
+.tracker-unit{font-size:11px;color:var(--txt3);font-weight:600}
+.progress-bar{height:8px;background:var(--bor2);border-radius:4px;overflow:hidden;margin-bottom:10px}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.pf-water{background:linear-gradient(90deg,#3dd68c,#4f8ef7)}
+.pf-kcal{background:linear-gradient(90deg,#f5924f,#f5c842)}
+.quick-btns{display:flex;gap:6px;flex-wrap:wrap}
+.qbtn{
+  padding:6px 12px;border-radius:7px;border:1px solid var(--bor2);background:var(--sur2);
+  color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.qbtn:hover{border-color:var(--acc);color:var(--acc)}
+.qbtn.active{background:var(--acc-d);border-color:var(--acc);color:var(--acc)}
+
+/* SHOPPING LIST */
+.shop-week-sel{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.shop-week-sel::-webkit-scrollbar{display:none}
+.week-btn{
+  flex-shrink:0;padding:6px 14px;border-radius:8px;border:1.5px solid var(--bor2);
+  background:var(--sur2);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .15s;
+}
+.week-btn.on{border-color:var(--acc);background:var(--acc-d);color:var(--acc)}
+.shop-cat{margin-bottom:10px}
+.shop-cat-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:7px}
+.shop-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--sur2);border-radius:9px;border:1px solid var(--bor);margin-bottom:5px;cursor:pointer;transition:all .15s}
+.shop-item:hover{border-color:var(--bor2)}
+.shop-cb{width:18px;height:18px;border-radius:5px;border:2px solid var(--bor2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s}
+.shop-cb.checked{background:var(--grn);border-color:var(--grn);color:white}
+.shop-item.checked .shop-item-name{text-decoration:line-through;color:var(--txt3)}
+.shop-item-name{flex:1;font-size:13px;font-weight:600}
+.shop-item-qty{font-size:11px;color:var(--txt2);font-weight:700;margin-right:4px}
+.shop-item-price{font-size:10px;color:var(--yel);font-weight:800;background:rgba(245,200,66,.1);padding:2px 7px;border-radius:5px}
+.shop-total{background:var(--acc-d);border-radius:10px;padding:12px;text-align:center;border:1px solid rgba(79,142,247,.2)}
+.shop-total-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3)}
+.shop-total-val{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--acc);letter-spacing:2px}
+
+/* REST DAY */
+.rest-center{padding:28px 16px;text-align:center}
+.rest-emo{font-size:52px;margin-bottom:10px}
+.rest-ttl{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--txt3)}
+.rest-sub{font-size:12px;color:var(--txt3);margin-top:5px}
+
+/* MONTH LIST */
+.mlist-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--sur);border-radius:12px;border:1px solid var(--bor);margin-bottom:6px;cursor:pointer;transition:border-color .18s}
+.mlist-item.ist{border-left:3px solid var(--acc)}
+.mlist-item.tod{border-color:var(--acc);background:#0e1a2d}
+.mlist-num{font-family:'Bebas Neue',sans-serif;font-size:22px;min-width:28px;text-align:center;line-height:1}
+.mlist-num.ct{color:var(--acc)}.mlist-num.cd{color:var(--grn)}.mlist-num.cn{color:var(--pur)}.mlist-num.cr{color:var(--bor2)}
+.mlist-info{flex:1}
+.mlist-ttl{font-size:12px;font-weight:700}
+.mlist-sub{font-size:10px;color:var(--txt2);margin-top:1px}
+.mlist-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:3px 7px;border-radius:5px}
+.done-check{font-size:16px;color:var(--grn)}
+
+.hidden{display:none!important}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+
+/* STREAK */
+.streak-bar{display:flex;align-items:center;gap:10px;background:var(--sur);border-radius:12px;border:1px solid var(--bor);padding:12px 14px;margin-bottom:10px}
+.streak-fire{font-size:28px}
+.streak-info{flex:1}
+.streak-num{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--org);line-height:1}
+.streak-lbl{font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* REMINDER BOX */
+.reminder-box{background:var(--sur);border-radius:12px;border:1px solid var(--bor);padding:14px;margin-bottom:10px}
+.rem-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);margin-bottom:10px}
+.rem-step{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.rem-num{width:20px;height:20px;border-radius:5px;background:var(--acc-d);color:var(--acc);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rem-t{font-size:12px;color:var(--txt2);line-height:1.5;font-weight:500}
+.rem-t b{color:var(--txt)}
+</style>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+// ── Telegram Mini App integration ──────────────────────────────
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  // Apply Telegram theme colors
+  document.documentElement.style.setProperty('--tg-color', tg.themeParams?.button_color || '#4f8ef7');
+}
+
+const TG_USER_ID = tg?.initDataUnsafe?.user?.id || null;
+const API_BASE   = window.location.origin;   // same server
+
+// ── Server sync helpers ────────────────────────────────────────
+async function serverSave(key, value) {
+  if (!TG_USER_ID) return;
+  try {
+    await fetch(`${API_BASE}/api/user/${TG_USER_ID}/data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value })
+    });
+  } catch(e) { console.warn('serverSave failed', e); }
+}
+
+async function serverLoad() {
+  if (!TG_USER_ID) return {};
+  try {
+    const r = await fetch(`${API_BASE}/api/user/${TG_USER_ID}`);
+    return await r.json();
+  } catch(e) { return {}; }
+}
+
+// ── Override LSset to also sync to server ─────────────────────
+const _originalLSset = window.LSset;
+
+// Merge remote data into localStorage on first load
+(async () => {
+  if (!TG_USER_ID) return;
+  const remote = await serverLoad();
+  Object.entries(remote).forEach(([k, v]) => {
+    try {
+      if (!localStorage.getItem(k)) {
+        localStorage.setItem(k, JSON.stringify(v));
+      }
+    } catch {}
+  });
+  // Re-render after sync
+  if (typeof renderDay === 'function') renderDay(cur);
+  if (typeof updateStats === 'function') updateStats();
+  if (typeof updateTracker === 'function') updateTracker();
+})();
+
+// Patch LSset AFTER page scripts define it
+window.addEventListener('load', () => {
+  const origLSset = window.LSset;
+  if (origLSset) {
+    window.LSset = (k, v) => {
+      origLSset(k, v);
+      serverSave(k, v);
+    };
+  }
+});
+</script>
+</head>
+<body>
+
+<!-- BOTTOM NAV -->
+<nav class="navbar">
+  <button class="nb on" onclick="showScreen('day')" id="nb-day"><div class="nb-ico">📅</div>День</button>
+  <button class="nb" onclick="showScreen('month')" id="nb-month"><div class="nb-ico">📋</div>Месяц</button>
+  <button class="nb" onclick="showScreen('tracker')" id="nb-tracker"><div class="nb-ico">💧</div>Трекер</button>
+  <button class="nb" onclick="showScreen('shop')" id="nb-shop"><div class="nb-ico">🛒</div>Покупки</button>
+  <button class="nb" onclick="showScreen('progress')" id="nb-prog"><div class="nb-ico">📈</div>Прогресс</button>
+</nav>
+
+<!-- HEADER (shown on day/month) -->
+<div class="header" id="mainHeader">
+  <div class="hrow">
+    <div><div class="logo">МАКСИМ</div><div class="hlbl">Май 2026 · Дом</div></div>
+    <div id="streakBadge" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--org)">🔥 <span id="streakNum">0</span></div>
+  </div>
+  <div class="cal-strip" id="calStrip"></div>
+</div>
+
+<!-- SCREEN: DAY -->
+<div class="screen on" id="scr-day">
+  <div class="nav-row">
+    <button class="nav-btn" id="prevBtn" onclick="go(-1)">←</button>
+    <div class="nav-mid" id="navMid"></div>
+    <button class="nav-btn" id="nextBtn" onclick="go(1)">→</button>
+  </div>
+  <div id="dayContent"></div>
+</div>
+
+<!-- SCREEN: MONTH -->
+<div class="screen hidden" id="scr-month">
+  <div id="monthContent"></div>
+</div>
+
+<!-- SCREEN: TRACKER -->
+<div class="screen hidden" id="scr-tracker">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:14px;color:var(--txt)">💧 ТРЕКЕР ДНЯ</div>
+
+  <!-- Water -->
+  <div class="tracker-card">
+    <div class="tracker-head">
+      <div><div class="tracker-title">💧 Вода</div><div class="tracker-unit">цель: 2.5 литра</div></div>
+      <div><div class="tracker-val" id="waterVal">0</div><div class="tracker-unit" style="text-align:right">мл</div></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill pf-water" id="waterBar" style="width:0%"></div></div>
+    <div class="quick-btns">
+      <button class="qbtn" onclick="addWater(200)">+200 мл</button>
+      <button class="qbtn" onclick="addWater(300)">+300 мл</button>
+      <button class="qbtn" onclick="addWater(500)">+500 мл</button>
+      <button class="qbtn" onclick="addWater(-200)" style="color:var(--red)">−200</button>
+    </div>
+  </div>
+
+  <!-- Calories -->
+  <div class="tracker-card">
+    <div class="tracker-head">
+      <div><div class="tracker-title">🔥 Калории</div><div class="tracker-unit">цель: 2800 ккал</div></div>
+      <div><div class="tracker-val" id="kcalVal">0</div><div class="tracker-unit" style="text-align:right">ккал</div></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill pf-kcal" id="kcalBar" style="width:0%"></div></div>
+    <div class="quick-btns">
+      <button class="qbtn" onclick="addKcal(200)">+200</button>
+      <button class="qbtn" onclick="addKcal(400)">+400</button>
+      <button class="qbtn" onclick="addKcal(600)">+600</button>
+      <button class="qbtn" onclick="addKcal(-200)" style="color:var(--red)">−200</button>
+    </div>
+  </div>
+
+  <!-- Food log -->
+  <div class="card"><div class="sec">
+    <div class="sec-lbl">📝 Что съел сегодня</div>
+    <div class="log-food-wrap" style="margin-top:0">
+      <div class="log-food-row" style="gap:6px;margin-bottom:8px">
+        <input id="foodName" placeholder="Название блюда..." style="flex:2">
+        <input id="foodKcal" placeholder="ккал" type="number" style="flex:1;max-width:80px">
+        <button class="log-btn" onclick="logFood()">＋</button>
+      </div>
+    </div>
+    <div id="foodLog"></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--txt3);font-weight:600">Нажми на запись чтобы удалить</div>
+  </div></div>
+
+  <!-- Reset -->
+  <button onclick="resetDay()" style="width:100%;padding:10px;background:var(--sur2);border:1px solid var(--bor);border-radius:9px;color:var(--txt3);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.5px">🔄 Сбросить день</button>
+</div>
+
+<!-- SCREEN: SHOP -->
+<div class="screen hidden" id="scr-shop">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:4px;color:var(--txt)">🛒 СПИСОК ПОКУПОК</div>
+  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:12px">Цены — Минск, май 2026</div>
+  <div class="shop-week-sel" id="shopWeekSel"></div>
+  <div id="shopContent"></div>
+</div>
+
+<!-- SCREEN: PROGRESS -->
+<div class="screen hidden" id="scr-progress">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:14px;color:var(--txt)">📈 ПРОГРЕСС МАЯ</div>
+
+  <div class="streak-bar">
+    <div class="streak-fire">🔥</div>
+    <div class="streak-info">
+      <div class="streak-num" id="streakNumBig">0</div>
+      <div class="streak-lbl">дней серия без пропуска</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--acc)" id="doneCnt">0</div>
+      <div style="font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase">из 18</div>
+    </div>
+  </div>
+
+  <div class="prog-stat-grid">
+    <div class="pstat"><div class="pstat-num" id="psTrain" style="color:var(--acc)">0</div><div class="pstat-lbl">Тренировок</div></div>
+    <div class="pstat"><div class="pstat-num" id="psWeight" style="color:var(--grn)">—</div><div class="pstat-lbl">Вес (кг)</div></div>
+    <div class="pstat"><div class="pstat-num" id="psChest" style="color:var(--pur)">—</div><div class="pstat-lbl">Грудь (см)</div></div>
+    <div class="pstat"><div class="pstat-num" id="psWaist" style="color:var(--org)">—</div><div class="pstat-lbl">Талия (см)</div></div>
+  </div>
+
+  <div class="prog-chart">
+    <div class="chart-title">Тренировки по неделям</div>
+    <div class="bars" id="weekBars"></div>
+  </div>
+
+  <!-- Measures form -->
+  <div class="meas-form">
+    <div class="meas-title">📏 Записать замеры</div>
+    <div class="meas-grid">
+      <div class="meas-field"><label>Вес (кг)</label><input type="number" step="0.1" id="mWeight" placeholder="58.5"></div>
+      <div class="meas-field"><label>Грудь (см)</label><input type="number" id="mChest" placeholder="90"></div>
+      <div class="meas-field"><label>Талия (см)</label><input type="number" id="mWaist" placeholder="72"></div>
+      <div class="meas-field"><label>Бицепс (см)</label><input type="number" id="mBicep" placeholder="32"></div>
+      <div class="meas-field"><label>Бедро (см)</label><input type="number" id="mHip" placeholder="52"></div>
+      <div class="meas-field"><label>Икра (см)</label><input type="number" id="mCalf" placeholder="35"></div>
+    </div>
+    <button class="meas-save" onclick="saveMeasures()">Сохранить замеры</button>
+  </div>
+
+  <!-- History -->
+  <div class="meas-history">
+    <div class="meas-title">История замеров</div>
+    <div id="measHistory"><div style="font-size:12px;color:var(--txt3);text-align:center;padding:10px">Замеры ещё не добавлены</div></div>
+  </div>
+
+  <!-- Reminder -->
+  <div class="reminder-box">
+    <div class="rem-title">🔔 Как настроить напоминания о тренировке</div>
+    <div class="rem-step"><div class="rem-num">1</div><div class="rem-t"><b>iPhone:</b> Часы → Будильник → Добавить → Поставь нужное время → Назови "Тренировка сегодня 💪"</div></div>
+    <div class="rem-step"><div class="rem-num">2</div><div class="rem-t"><b>iPhone Shortcuts:</b> Приложение "Команды" → Автоматизация → Время дня → Открыть этот файл + уведомление</div></div>
+    <div class="rem-step"><div class="rem-num">3</div><div class="rem-t"><b>Windows:</b> Планировщик задач → Создать задание → Каждый день в нужное время → Действие: показать уведомление</div></div>
+  </div>
+</div>
+<script>
+// ==================== DATA ====================
+const DOW=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+const SHIFT={};
+[3,10,11,12,15,16,17,21,22,28].forEach(d=>SHIFT[d]='Д');
+[5,7,8,19,29,30,31].forEach(d=>SHIFT[d]='Н');
+
+const TRAIN_DAYS={
+  1:{w:'Грудь/Трицепс',time:'вечером'},2:{w:'Спина/Бицепс',time:'вечером'},
+  3:{w:'Плечи/Пресс',time:'в любое время'},6:{w:'Ноги/Плечи',time:'вечером'},
+  10:{w:'Грудь/Трицепс',time:'вечером'},11:{w:'Спина/Бицепс',time:'вечером'},
+  13:{w:'Плечи/Пресс',time:'утром'},14:{w:'Ноги/Плечи',time:'в любое время'},
+  15:{w:'Грудь/Трицепс',time:'вечером'},17:{w:'Спина/Бицепс',time:'вечером'},
+  18:{w:'Плечи/Пресс',time:'в любое время'},20:{w:'Ноги/Плечи',time:'в любое время'},
+  21:{w:'Грудь/Трицепс',time:'вечером'},22:{w:'Спина/Бицепс',time:'вечером'},
+  24:{w:'Плечи/Пресс',time:'в любое время'},25:{w:'Ноги/Плечи',time:'вечером'},
+  27:{w:'Грудь/Трицепс',time:'утром'},28:{w:'Спина/Бицепс',time:'вечером'},
+};
+
+const EX={
+  'Отжимания классические':{ico:'💪',sets:'4×макс',isTimer:false,
+    steps:['Ладони чуть шире плеч, пальцы вперёд. Встань в упор лёжа — тело прямая линия.','Медленно сгибай локти под углом 45° к телу (не в стороны!). 2-3 сек вниз.','Опустись до касания грудью пола или 90° в локтях. Поясница не провисает.','Взрывно оттолкнись вверх. Выдох в момент подъёма. Полностью выпрями руки.'],
+    tip:'Локти 45° к телу — защита плечевого сустава. Каждую неделю +1 повтор. Не можешь 8 раз — опусти колени.'},
+  'Отжимания — узкий хват':{ico:'🔷',sets:'3×10-12',isTimer:false,
+    steps:['Ладони под грудью вплотную, большие пальцы почти касаются. Тело прямое.','Опускайся — локти строго назад вдоль тела, не в стороны.','2 сек вниз, 1 сек вверх. Полностью выпрями руки в верхней точке.'],
+    tip:'Локти назад = трицепс. Чувствуешь жжение сзади руки — правильно.'},
+  'Отжимания с ногами на стуле':{ico:'⬆️',sets:'3×10',isTimer:false,
+    steps:['Ноги на стуле (40-60см), руки на полу чуть шире плеч. Таз выше плеч.','Медленно опускай голову к полу. 3 сек вниз. Шея расслаблена.','Взрывно вернись вверх. Почувствуй верхнюю грудь.'],
+    tip:'Верхняя грудь = объём. Это лучшая замена наклонному жиму без штанги.'},
+  'Обратные отжимания от стула':{ico:'🪑',sets:'3×12',isTimer:false,
+    steps:['Ладони на краю стула сзади, ноги вперёд, таз перед стулом.','Опускай таз, локти идут строго назад. 2-3 сек вниз.','До 90° в локтях — не ниже. Выжимай силой трицепса.'],
+    tip:'Ниже 90° — нагрузка на плечевой сустав. Ноги на второй стул = сложнее.'},
+  'Планка':{ico:'⬛',sets:'3×60 сек',isTimer:true,timerSec:60,
+    steps:['Упор на предплечьях. Локти под плечами. Тело — прямая линия.','Таз не поднимать, не опускать. Пресс — как будто удар в живот.','Дыши спокойно. Ягодицы сжаты. Держи всё время.'],
+    tip:'Начни с 30 сек, +5 сек каждую тренировку. Дрожание — ок, провисание — нет.'},
+  'Подтягивания (или австралийские)':{ico:'🏋',sets:'4×макс',isTimer:false,
+    steps:['Прямой хват чуть шире плеч. Сведи лопатки вниз перед подъёмом.','Тяни себя вверх до подбородка над перекладиной. Не болтай ногами.','Медленно опускайся 2-3 сек. Полное выпрямление рук внизу.','Нет турника → стол: лёжа снизу, хват за край, тяни грудь к столешнице.'],
+    tip:'Тяни локтями вниз, не руками вверх. Медленный спуск = 50% роста мышцы.'},
+  'Тяга рюкзака в наклоне (1 рука)':{ico:'🎒',sets:'4×12 кажд.',isTimer:false,
+    steps:['Колено и ладонь на диване. Спина горизонтально. Рюкзак в свободной руке.','Тяни локоть строго вверх и назад — как заводишь мотоцикл.','В верхней точке лопатка максимально к позвоночнику. 1 сек пауза.','Медленно опускай — 2-3 сек. Рука полностью выпрямляется.'],
+    tip:'Рука — крюк, тянет ЛОКОТЬ. Это ключ к нагрузке на широчайшую.'},
+  'Сгибания на бицепс с рюкзаком':{ico:'💪',sets:'4×12',isTimer:false,
+    steps:['Рюкзак в руках, ладони вперёд. Локти прижаты к телу — не двигаются.','2 сек вверх. В верхней точке сожми бицепс — 1 сек.','3 сек вниз. Рука полностью выпрямляется. Не бросай рюкзак.'],
+    tip:'3 сек вниз важнее скорости подъёма. Не качай корпусом.'},
+  'Гиперэкстензия (лодочка)':{ico:'🚣',sets:'3×15',isTimer:false,
+    steps:['Лёжа на животе. Руки вперёд или за головой (сложнее).','Одновременно отрывай грудь и ноги — как будто летишь.','Пауза 1 сек в верхней точке. Медленно опускай без касания пола.'],
+    tip:'Защищает поясницу. Без разгибателей спины — широкой спины не будет.'},
+  'Молотки с рюкзаком':{ico:'🔨',sets:'3×12',isTimer:false,
+    steps:['Рюкзак сбоку, ладони внутрь (нейтральный хват). Локти прижаты к телу.','Поднимай как обычное сгибание. В верхней точке — 1 сек.','Медленно опускай. Это толщина рук — плечевая мышца.'],
+    tip:'Молотки делают руку толще, "выталкивая" бицепс вверх.'},
+  'Жим рюкзака стоя':{ico:'🏋',sets:'4×12',isTimer:false,
+    steps:['Рюкзак у груди. Ноги на ширине плеч. Пресс напряжён, спина прямая.','Выжимай строго вверх, полностью выпрямляя руки над головой.','Пауза 1 сек. Медленно опускай 2-3 сек к груди.'],
+    tip:'Прогибается поясница — убери вес. Пресс напряжён всегда.'},
+  'Отжимания пайк (угол)':{ico:'🔺',sets:'3×12',isTimer:false,
+    steps:['Упор лёжа → подними таз вверх (буква Л). Руки и ноги прямые.','Опускай голову к полу между руками. Локти чуть в стороны. 2 сек.','Выжимай вверх до выпрямления рук.'],
+    tip:'Чем выше таз — тем больше нагрузка на плечи. Ноги на стул = ещё сложнее.'},
+  'Скручивания':{ico:'⚡',sets:'3×20',isTimer:false,
+    steps:['Лёжа, колени согнуты, руки за головой (не тяни шею!). Поясница к полу.','Поднимай лопатки от пола. Пауза 1 сек — максимально напряги пресс.','Медленно опускай. Голова не касается пола полностью.'],
+    tip:'Амплитуда маленькая — важно жжение, не высота подъёма.'},
+  'Подъём ног лёжа':{ico:'🦵',sets:'3×15',isTimer:false,
+    steps:['Лёжа на спине. Руки под ягодицами (защита поясницы). Ноги прямые.','Поднимай ноги до 90° — 3 сек вверх. Поясница прижата к полу.','Медленно опускай — остановись в 5-10 см от пола. Снова вверх.'],
+    tip:'Не опускай до пола между повторами. Это и есть прокачка нижнего пресса.'},
+  'Планка боковая':{ico:'↔️',sets:'3×30 сек',isTimer:true,timerSec:30,
+    steps:['На боку: предплечье на полу, локоть под плечом. Подними бёдра.','Тело прямая линия. Свободная рука на бедре или вверх.','Не давай бёдрам провисать. Пресс и ягодицы напряжены.'],
+    tip:'Косые мышцы живота — V-образный силуэт и тонкая талия.'},
+  'Велосипед':{ico:'🚴',sets:'3×20',isTimer:false,
+    steps:['Лёжа, руки за головой, ноги под 45°. Поясница к полу.','Правое колено + левый локоть → смена. Имитация педалей.','Средний темп. Плечи отрываются при каждом скручивании.'],
+    tip:'Поясница не отрывается — если отрывается, подними ноги выше.'},
+  'Приседания с рюкзаком':{ico:'🦵',sets:'4×15',isTimer:false,
+    steps:['Рюкзак на спине. Ноги чуть шире плеч, носки чуть в стороны. Смотри вперёд.','Отводи таз назад и вниз. До параллели бёдер с полом. Пятки на полу.','Взрывно выталкивай пятками вверх. Полностью выпрями ноги.'],
+    tip:'Пятки отрываются — разверни носки шире или подложи под пятки. Пятки в пол всегда.'},
+  'Выпады':{ico:'👣',sets:'3×12 кажд.',isTimer:false,
+    steps:['Стоя прямо. Широкий шаг вперёд (~70-80 см).','Заднее колено к полу без касания. Переднее колено над пяткой.','Корпус вертикально. Оттолкнись передней ногой — вернись в исходное.'],
+    tip:'Широкий шаг — больше ягодицы. Узкий шаг — больше квадрицепс.'},
+  'Подъёмы на носки':{ico:'⬆️',sets:'3×20',isTimer:false,
+    steps:['У стены для баланса. Ноги на ширине бёдер.','На носки максимально высоко — 2 сек вверх. Пауза 1-2 сек — сожми икру.','Медленно вниз — 3 сек. Это самая важная часть.'],
+    tip:'Ступнями на край ступеньки — пятки ниже уровня ступени. Максимальная амплитуда.'},
+  'Прыжки squat':{ico:'🦘',sets:'3×12',isTimer:false,
+    steps:['Ноги на ширине плеч. Присядь до параллели — 2 сек вниз.','Взрывно выпрыгни вверх. Мягко приземляйся на носки.','Без паузы — сразу в следующий присед.'],
+    tip:'Шумят соседи — замени медленными приседами с 3 сек паузой внизу.'},
+};
+
+const WORKOUTS_PLAN={
+  'Грудь/Трицепс':['Отжимания классические','Отжимания — узкий хват','Отжимания с ногами на стуле','Обратные отжимания от стула','Планка'],
+  'Спина/Бицепс':['Подтягивания (или австралийские)','Тяга рюкзака в наклоне (1 рука)','Сгибания на бицепс с рюкзаком','Гиперэкстензия (лодочка)','Молотки с рюкзаком'],
+  'Плечи/Пресс':['Жим рюкзака стоя','Отжимания пайк (угол)','Скручивания','Подъём ног лёжа','Планка боковая','Велосипед'],
+  'Ноги/Плечи':['Приседания с рюкзаком','Выпады','Подъёмы на носки','Прыжки squat','Жим рюкзака стоя','Планка'],
+};
+
+// MEALS DATA
+const MEALS={
+  train:[
+    {time:'Завтрак · 7:00',ico:'🌅',name:'Овсянка с яйцами и бананом',kcal:'~580',price:'~2.10',
+     ingr:[{n:'Овсяные хлопья',q:'80г',p:'0.35'},{n:'Молоко 2.5%',q:'250мл',p:'0.40'},{n:'Банан',q:'1 шт',p:'0.35'},{n:'Яйца',q:'2 шт',p:'0.40'},{n:'Грецкие орехи',q:'20г',p:'0.50'},{n:'Мёд',q:'1 ч.л.',p:'0.10'}],
+     macro:{b:24,j:18,u:72},
+     alts:['Гречневая каша + яйца','Омлет с овощами','Тосты с авокадо + яйца'],
+     steps:['Молоко нагрей почти до кипения на среднем огне.','Засыпь овсянку. Слабый огонь, 5-7 мин, помешивай.','Отвари яйца вкрутую (8 мин) или сделай омлет.','Добавь в кашу мёд и нарезанный банан. Орехи сбоку.']},
+    {time:'Перекус · 10:30',ico:'🥛',name:'Творог с ягодами',kcal:'~220',price:'~1.20',
+     ingr:[{n:'Творог 5%',q:'200г',p:'0.90'},{n:'Замороженные ягоды',q:'80г',p:'0.20'},{n:'Мёд',q:'1 ч.л.',p:'0.10'}],
+     macro:{b:24,j:6,u:18},
+     alts:['Кефир + банан','Йогурт греческий + орехи','Яблоко + 30г сыра'],
+     steps:['Разморозь ягоды (30 сек микроволновка).','Смешай творог, ягоды с соком, мёд. Готово.']},
+    {time:'Обед · 13:00',ico:'🍽',name:'Гречка с куриной грудкой',kcal:'~650',price:'~3.80',
+     ingr:[{n:'Гречневая крупа',q:'80г',p:'0.30'},{n:'Куриная грудка',q:'200г',p:'2.00'},{n:'Морковь + лук',q:'по 1 шт',p:'0.20'},{n:'Чеснок, масло, специи',q:'—',p:'0.30'}],
+     macro:{b:52,j:12,u:68},
+     alts:['Рис + говядина','Паста + тунец','Картофель + куриные бёдра'],
+     steps:['Гречка: 80г + 160мл воды, кипение → мин. огонь → крышка → 15 мин.','Курицу нарежь, посоли, паприка, перец.','Лук + морковь обжарь 3-4 мин. Добавь курицу, 6-7 мин до корочки. Чеснок в конце.']},
+    {time:'До трен. · за 1.5ч',ico:'⚡',name:'Бутерброд + банан',kcal:'~380',price:'~1.40',
+     ingr:[{n:'Хлеб цельнозерновой',q:'2 куска',p:'0.30'},{n:'Арахисовая паста',q:'2 ст.л.',p:'0.80'},{n:'Банан',q:'1 шт',p:'0.30'}],
+     macro:{b:12,j:14,u:56},
+     alts:['Рис + курица (заранее)','Овсянка + протеин','Банан + орехи'],
+     steps:['Намажь пасту на хлеб. Ешь за 1.5ч до тренировки — не позже.','Банан — сразу перед или во время разминки.']},
+    {time:'После трен.',ico:'🥤',name:'Гейнер на молоке',kcal:'~420',price:'~1.50',
+     ingr:[{n:'Гейнер (пол-порции)',q:'по инстр.',p:'1.10'},{n:'Молоко 2.5%',q:'350мл',p:'0.40'}],
+     macro:{b:30,j:5,u:65},
+     alts:['Творог + банан + мёд','Рис + куриная грудка','Омлет + тост'],
+     steps:['В течение 30-40 мин после тренировки.','Молоко + гейнер в шейкере. Встряхни 20 сек.','Если порция >600 ккал — бери половину.']},
+    {time:'Ужин · 19:00',ico:'🌆',name:'Запечённая рыба с картофелем',kcal:'~620',price:'~4.50',
+     ingr:[{n:'Хек или минтай',q:'250г',p:'2.50'},{n:'Картофель',q:'3 шт',p:'0.40'},{n:'Лимон, чеснок, зелень',q:'—',p:'0.60'},{n:'Оливковое масло',q:'1 ст.л.',p:'0.30'},{n:'Соль, специи',q:'—',p:'0.10'}],
+     macro:{b:48,j:14,u:58},
+     alts:['Говядина + гречка','Куриные бёдра + рис','Лосось + овощи'],
+     steps:['Духовка 200°C. Картофель дольками на фольгу, масло, соль — 20 мин.','Рядом рыба: лимон, чеснок, специи. Ещё 15-18 мин.','Зелень при подаче.']},
+    {time:'Перед сном · 22:00',ico:'🌙',name:'Творог с орехами',kcal:'~200',price:'~1.10',
+     ingr:[{n:'Творог 5%',q:'200г',p:'0.90'},{n:'Грецкие орехи',q:'15г',p:'0.20'}],
+     macro:{b:24,j:9,u:6},
+     alts:['Казеиновый протеин','Кефир','Яйца вкрутую'],
+     steps:['Творог + орехи + щепотка корицы. За 30-40 мин до сна.','Медленный белок на всю ночь для роста мышц.']},
+  ],
+  rest:[
+    {time:'Завтрак · 8:00',ico:'🌅',name:'Омлет с овощами',kcal:'~420',price:'~2.20',
+     ingr:[{n:'Яйца',q:'3 шт',p:'0.60'},{n:'Молоко',q:'3 ст.л.',p:'0.10'},{n:'Перец, помидор',q:'по 0.5 шт',p:'0.50'},{n:'Сыр твёрдый',q:'30г',p:'0.70'},{n:'Масло слив.',q:'1 ч.л.',p:'0.10'}],
+     macro:{b:28,j:22,u:8},alts:['Яичница + хлеб','Творог + фрукты','Каша на молоке'],
+     steps:['Яйца + молоко + соль взбей.','Обжарь овощи 2 мин. Залей яйцами.','Сыр сверху, крышка — 2 мин.']},
+    {time:'Обед · 13:00',ico:'🍽',name:'Рис с говядиной',kcal:'~600',price:'~4.00',
+     ingr:[{n:'Рис длиннозёрный',q:'80г',p:'0.30'},{n:'Говядина',q:'150г',p:'2.70'},{n:'Лук, морковь',q:'по 1 шт',p:'0.20'},{n:'Масло, специи',q:'—',p:'0.30'}],
+     macro:{b:38,j:14,u:68},alts:['Гречка + курица','Паста с фаршем','Картофель + рыба'],
+     steps:['Рис: 80г + 160мл воды, 18 мин под крышкой.','Говядину полосками, обжарь с луком и морковью 7-8 мин.','Подавай с рисом.']},
+    {time:'Ужин · 19:00',ico:'🌆',name:'Курица в соевом соусе + гречка',kcal:'~550',price:'~3.20',
+     ingr:[{n:'Куриная грудка',q:'200г',p:'2.00'},{n:'Гречка',q:'80г',p:'0.30'},{n:'Соевый соус',q:'2 ст.л.',p:'0.30'},{n:'Чеснок, масло',q:'—',p:'0.20'},{n:'Огурец',q:'1 шт',p:'0.40'}],
+     macro:{b:50,j:12,u:60},alts:['Рыба + рис','Говядина + картофель','Яйца + гречка'],
+     steps:['Маринад: соевый соус + чеснок + масло. Курица 15+ мин.','Гречка 15 мин под крышкой.','Курицу обжарь по 5-6 мин с каждой стороны.']},
+    {time:'Перекусы × 2',ico:'🥜',name:'Творог + фрукты + орехи',kcal:'~350',price:'~1.80',
+     ingr:[{n:'Творог 5%',q:'150г',p:'0.70'},{n:'Яблоко или груша',q:'1 шт',p:'0.40'},{n:'Миндаль',q:'20г',p:'0.50'},{n:'Мёд',q:'1 ч.л.',p:'0.10'}],
+     macro:{b:20,j:10,u:38},alts:['Банан + орехи','Кефир + хлеб','Яблоко + сыр'],
+     steps:['Всё смешай. Ешь в 11:00 и 16:00.']},
+  ],
+  night:[
+    {time:'До смены · 18:00',ico:'🌆',name:'Паста с мясным соусом',kcal:'~700',price:'~3.50',
+     ingr:[{n:'Паста',q:'100г',p:'0.60'},{n:'Говяжий фарш',q:'150г',p:'1.80'},{n:'Томатная паста',q:'2 ст.л.',p:'0.30'},{n:'Лук, чеснок, специи',q:'—',p:'0.30'}],
+     macro:{b:42,j:20,u:80},alts:['Рис + мясо','Картофель + курица','Гречка + говядина'],
+     steps:['Пасту отвари по инструкции.','Лук обжарь, добавь фарш — 7-8 мин.','Томатная паста + 100мл воды + специи — 5 мин. Смешай с пастой.']},
+    {time:'Ночью · 02:00',ico:'🌙',name:'Творог с орехами (с собой)',kcal:'~220',price:'~1.10',
+     ingr:[{n:'Творог 5%',q:'150г',p:'0.70'},{n:'Грецкие орехи',q:'20г',p:'0.30'},{n:'Мёд',q:'1 ч.л.',p:'0.10'}],
+     macro:{b:20,j:10,u:12},alts:['Протеиновый батончик','Кефир','Орехи + сухофрукты'],
+     steps:['Приготовь дома заранее в контейнере.','Смешай творог + мёд + орехи. Запивай водой (1.5л на смену).']},
+    {time:'После смены · утро',ico:'🌅',name:'Лёгкий завтрак перед сном',kcal:'~300',price:'~0.80',
+     ingr:[{n:'Кефир 1%',q:'250мл',p:'0.50'},{n:'Банан',q:'1 шт',p:'0.30'}],
+     macro:{b:12,j:3,u:52},alts:['Творог нежирный','Стакан молока + банан'],
+     steps:['Выпей кефир, съешь банан. Лёгко — не перегружай желудок.','Сразу ложись спать. 7-8 часов сна после ночной — важнее тренировки.']},
+  ],
+};
+
+// SHOPPING ITEMS by week with BYN prices (Minsk)
+const SHOP_WEEKS={
+  'Неделя 1 (1-7 мая)':{
+    'Мясо и рыба':[
+      {n:'Куриная грудка',q:'600г',p:'6.00'},{n:'Говядина мякоть',q:'300г',p:'5.40'},{n:'Хек/минтай',q:'500г',p:'5.00'}],
+    'Молочное':[
+      {n:'Творог 5%',q:'800г (4 пач.)',p:'3.60'},{n:'Молоко 2.5%',q:'2л',p:'3.20'},{n:'Кефир 1%',q:'1л',p:'1.50'},{n:'Яйца С1',q:'10 шт',p:'3.00'}],
+    'Крупы и макароны':[
+      {n:'Гречка',q:'500г',p:'1.50'},{n:'Овсянка (не быстрая)',q:'500г',p:'1.80'},{n:'Рис длиннозёрный',q:'500г',p:'1.60'},{n:'Паста пенне',q:'400г',p:'1.20'}],
+    'Овощи и фрукты':[
+      {n:'Бананы',q:'1кг (7 шт)',p:'2.10'},{n:'Картофель',q:'2кг',p:'1.60'},{n:'Морковь',q:'500г',p:'0.60'},{n:'Лук репчатый',q:'1кг',p:'0.80'},{n:'Помидоры',q:'500г',p:'1.50'},{n:'Перец болгарский',q:'3 шт',p:'1.20'}],
+    'Масла и соусы':[
+      {n:'Оливковое масло',q:'250мл',p:'4.50'},{n:'Соевый соус',q:'200мл',p:'2.20'},{n:'Томатная паста',q:'200г',p:'0.80'},{n:'Арахисовая паста',q:'200г',p:'3.50'}],
+    'Прочее':[
+      {n:'Грецкие орехи',q:'200г',p:'4.00'},{n:'Мёд натуральный',q:'250г',p:'4.50'},{n:'Хлеб цельнозерновой',q:'2 буханки',p:'3.00'},{n:'Сыр твёрдый',q:'200г',p:'3.60'}],
+  },
+  'Неделя 2 (8-14 мая)':{
+    'Мясо и рыба':[
+      {n:'Куриная грудка',q:'800г',p:'8.00'},{n:'Говяжий фарш',q:'300г',p:'4.50'},{n:'Лосось/хек',q:'400г',p:'6.00'}],
+    'Молочное':[
+      {n:'Творог 5%',q:'1кг (5 пач.)',p:'4.50'},{n:'Молоко 2.5%',q:'2л',p:'3.20'},{n:'Яйца С1',q:'10 шт',p:'3.00'}],
+    'Крупы и макароны':[
+      {n:'Гречка',q:'500г',p:'1.50'},{n:'Рис',q:'500г',p:'1.60'},{n:'Овсянка',q:'500г',p:'1.80'}],
+    'Овощи и фрукты':[
+      {n:'Бананы',q:'1кг',p:'2.10'},{n:'Картофель',q:'2кг',p:'1.60'},{n:'Огурцы',q:'500г',p:'1.80'},{n:'Морковь + лук',q:'по 500г',p:'1.40'}],
+    'Прочее':[
+      {n:'Кефир 1%',q:'2л',p:'3.00'},{n:'Замороженные ягоды',q:'500г',p:'2.50'},{n:'Хлеб цельнозерновой',q:'2 буханки',p:'3.00'}],
+  },
+  'Неделя 3 (15-21 мая)':{
+    'Мясо и рыба':[
+      {n:'Куриная грудка',q:'600г',p:'6.00'},{n:'Говядина',q:'400г',p:'7.20'},{n:'Рыба',q:'500г',p:'5.00'}],
+    'Молочное':[
+      {n:'Творог 5%',q:'1кг',p:'4.50'},{n:'Молоко',q:'2л',p:'3.20'},{n:'Яйца',q:'15 шт',p:'4.50'},{n:'Сыр',q:'150г',p:'2.70'}],
+    'Крупы':[
+      {n:'Гречка',q:'500г',p:'1.50'},{n:'Рис',q:'500г',p:'1.60'},{n:'Паста',q:'400г',p:'1.20'}],
+    'Овощи и фрукты':[
+      {n:'Бананы',q:'1кг',p:'2.10'},{n:'Картофель',q:'1.5кг',p:'1.20'},{n:'Помидоры + огурцы',q:'по 400г',p:'2.80'}],
+    'Прочее':[
+      {n:'Ягоды замороженные',q:'500г',p:'2.50'},{n:'Орехи грецкие',q:'150г',p:'3.00'},{n:'Хлеб',q:'2 буханки',p:'3.00'}],
+  },
+  'Неделя 4 (22-31 мая)':{
+    'Мясо и рыба':[
+      {n:'Куриная грудка',q:'800г',p:'8.00'},{n:'Говяжий фарш',q:'300г',p:'4.50'},{n:'Рыба',q:'500г',p:'5.00'}],
+    'Молочное':[
+      {n:'Творог 5%',q:'1кг',p:'4.50'},{n:'Молоко',q:'3л',p:'4.80'},{n:'Кефир',q:'1л',p:'1.50'},{n:'Яйца',q:'10 шт',p:'3.00'}],
+    'Крупы':[
+      {n:'Гречка',q:'500г',p:'1.50'},{n:'Рис',q:'500г',p:'1.60'},{n:'Овсянка',q:'500г',p:'1.80'}],
+    'Овощи и фрукты':[
+      {n:'Бананы',q:'1кг',p:'2.10'},{n:'Картофель',q:'2кг',p:'1.60'},{n:'Лук + морковь',q:'—',p:'1.40'},{n:'Свежие овощи',q:'по сезону',p:'3.00'}],
+    'Прочее':[
+      {n:'Орехи',q:'200г',p:'4.00'},{n:'Мёд',q:'250г',p:'4.50'},{n:'Хлеб',q:'2 буханки',p:'3.00'},{n:'Специи (запас)',q:'—',p:'2.00'}],
+  },
+};
+
+// ==================== STATE ====================
+const TODAY_D=new Date();
+const IS_MAY=TODAY_D.getMonth()===4&&TODAY_D.getFullYear()===2026;
+let cur=IS_MAY?Math.min(Math.max(TODAY_D.getDate(),1),31):1;
+
+function LS(k,def=null){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):def;}catch{return def;}}
+function LSset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+
+// timer state
+let timerInterval=null, timerSec=0, timerRunning=false, timerEl=null, restInterval=null, restSec=0;
+
+function getDayData(d){
+  const shift=SHIFT[d]||'-';
+  if(TRAIN_DAYS[d])return{shift,isTrain:true,...TRAIN_DAYS[d]};
+  const prevN=SHIFT[d-1]==='Н';
+  return{shift,isTrain:false,note:prevN?'Восстановление после ночной':'День отдыха'};
+}
+function getClr(d){const data=getDayData(d);if(data.isTrain)return'ct';if(data.shift==='Д')return'cd';if(data.shift==='Н')return'cn';return'cr';}
+function getDOW(d){return DOW[new Date(2026,4,d).getDay()];}
+function getAllTrainDays(){return Object.keys(TRAIN_DAYS).map(Number);}
+function getDoneTrains(){return LS('doneTrains',{});}
+function isDone(d){return getDoneTrains()[d]===true;}
+
+function getStreak(){
+  let s=0,d=cur;
+  while(d>=1&&isDone(d)){s++;d--;}
+  return s;
+}
+
+// ==================== TIMER ====================
+function startTimer(sec,displayId,btnId){
+  if(timerRunning){clearInterval(timerInterval);timerRunning=false;return;}
+  timerSec=sec;timerRunning=true;
+  timerEl=document.getElementById(displayId);
+  const btn=document.getElementById(btnId);
+  if(btn)btn.textContent='⏸ Пауза';
+  timerInterval=setInterval(()=>{
+    timerSec--;
+    if(timerEl){const m=Math.floor(timerSec/60);const s=timerSec%60;timerEl.textContent=m+':'+(s<10?'0':'')+s;}
+    if(timerSec<=0){
+      clearInterval(timerInterval);timerRunning=false;
+      if(timerEl)timerEl.style.color='var(--org)';
+      if(btn){btn.textContent='▶ Старт';btn.style.background='var(--grn)';}
+      try{const a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFhYqFhYqFhYqFhYqFhYqFhYqFhYqFhYqFhYqF');a.play();}catch{}
+    }
+  },1000);
+}
+
+function startRestTimer(sec,wrapId){
+  clearInterval(restInterval);
+  const wrap=document.getElementById(wrapId);
+  if(!wrap)return;
+  restSec=sec;
+  const disp=wrap.querySelector('.rest-disp');
+  if(disp){const m=Math.floor(sec/60);const s=sec%60;disp.textContent='⏱ '+m+':'+(s<10?'0':'')+s;disp.style.color='var(--yel)';}
+  restInterval=setInterval(()=>{
+    restSec--;
+    if(disp){const m=Math.floor(restSec/60);const s=restSec%60;disp.textContent='⏱ '+m+':'+(s<10?'0':'')+s;}
+    if(restSec<=0){
+      clearInterval(restInterval);
+      if(disp){disp.textContent='✅ Готов!';disp.style.color='var(--grn)';}
+    }
+  },1000);
+}
+
+// ==================== SET TRACKER ====================
+function toggleSet(exKey,setIdx,totalSets){
+  const key='sets_'+cur+'_'+exKey;
+  let done=LS(key,[]);
+  const idx=done.indexOf(setIdx);
+  if(idx>=0)done.splice(idx,1);else done.push(setIdx);
+  LSset(key,done);
+  renderSetDots(exKey,totalSets);
+  if(done.length>=totalSets){
+    markTrainDone();
+    updateStats();
+  }
+}
+
+function renderSetDots(exKey,totalSets){
+  const key='sets_'+cur+'_'+exKey;
+  const done=LS(key,[]);
+  const wrap=document.getElementById('dots_'+exKey.replace(/[^a-z]/gi,'_'));
+  if(!wrap)return;
+  wrap.innerHTML='';
+  for(let i=0;i<totalSets;i++){
+    const btn=document.createElement('button');
+    btn.className='set-dot'+(done.includes(i)?' done':'');
+    btn.innerHTML=done.includes(i)?'✓':'';
+    btn.onclick=()=>toggleSet(exKey,i,totalSets);
+    wrap.appendChild(btn);
+  }
+}
+
+function markTrainDone(){
+  const dt=getDoneTrains();
+  if(!dt[cur]){dt[cur]=true;LSset('doneTrains',dt);}
+  renderStrip();
+}
+
+// ==================== PROGRESS INPUT ====================
+function saveProgress(exKey){
+  const inp=document.getElementById('pinp_'+exKey.replace(/[^a-z]/gi,'_'));
+  if(!inp||!inp.value)return;
+  const key='prog_'+exKey;
+  const hist=LS(key,[]);
+  hist.push({d:cur,v:inp.value,date:new Date().toLocaleDateString('ru')});
+  LSset(key,hist);
+  inp.value='';
+  const saved=document.getElementById('psaved_'+exKey.replace(/[^a-z]/gi,'_'));
+  if(saved){saved.textContent='✅ Сохранено!';saved.style.color='var(--grn)';setTimeout(()=>{saved.textContent=''},2000);}
+}
+
+// ==================== WATER / KCAL ====================
+function getTodayKey(){return'day_'+cur+'_'+new Date().toDateString();}
+function addWater(ml){
+  const k=getTodayKey()+'_water';
+  const v=Math.max(0,LS(k,0)+ml);
+  LSset(k,v);updateTracker();}
+function addKcal(k){
+  const key=getTodayKey()+'_kcal';
+  const v=Math.max(0,LS(key,0)+k);
+  LSset(key,v);updateTracker();}
+function updateTracker(){
+  const k=getTodayKey();
+  const w=LS(k+'_water',0);const c=LS(k+'_kcal',0);
+  const wEl=document.getElementById('waterVal');const cEl=document.getElementById('kcalVal');
+  const wBar=document.getElementById('waterBar');const cBar=document.getElementById('kcalBar');
+  if(wEl)wEl.textContent=w;if(cEl)cEl.textContent=c;
+  if(wBar)wBar.style.width=Math.min(100,w/25)+'%';
+  if(cBar)cBar.style.width=Math.min(100,c/28)+'%';
+}
+function logFood(){
+  const name=document.getElementById('foodName');const kcal=document.getElementById('foodKcal');
+  if(!name||!name.value)return;
+  const k=getTodayKey()+'_foods';
+  const foods=LS(k,[]);
+  const kc=parseInt(kcal.value)||0;
+  foods.push({n:name.value,k:kc});
+  LSset(k,foods);
+  if(kc)addKcal(kc);
+  name.value='';kcal.value='';
+  renderFoodLog();
+}
+function renderFoodLog(){
+  const k=getTodayKey()+'_foods';
+  const foods=LS(k,[]);
+  const el=document.getElementById('foodLog');if(!el)return;
+  if(!foods.length){el.innerHTML='<div style="font-size:12px;color:var(--txt3);padding:8px 0">Ничего не записано</div>';return;}
+  el.innerHTML=foods.map((f,i)=>`<div class="logged-item" onclick="delFood(${i})"><span style="color:var(--txt)">${f.n}</span><span>${f.k?f.k+' ккал':''} <button class="logged-del">✕</button></span></div>`).join('');
+}
+function delFood(i){
+  const k=getTodayKey()+'_foods';const foods=LS(k,[]);
+  if(foods[i]&&foods[i].k){addKcal(-foods[i].k);}
+  foods.splice(i,1);LSset(k,foods);renderFoodLog();
+}
+function resetDay(){
+  const k=getTodayKey();
+  LSset(k+'_water',0);LSset(k+'_kcal',0);LSset(k+'_foods',[]);
+  updateTracker();renderFoodLog();
+}
+
+// ==================== MEASURES ====================
+function saveMeasures(){
+  const fields=['Weight','Chest','Waist','Bicep','Hip','Calf'];
+  const vals={};
+  fields.forEach(f=>{const el=document.getElementById('m'+f);if(el&&el.value)vals[f.toLowerCase()]=el.value;});
+  if(!Object.keys(vals).length)return;
+  const hist=LS('measures',[]);
+  hist.unshift({date:new Date().toLocaleDateString('ru'),d:cur,...vals});
+  LSset('measures',hist);
+  fields.forEach(f=>{const el=document.getElementById('m'+f);if(el)el.value='';});
+  renderMeasures();updateStats();
+}
+function renderMeasures(){
+  const hist=LS('measures',[]);
+  const el=document.getElementById('measHistory');if(!el)return;
+  if(!hist.length){el.innerHTML='<div style="font-size:12px;color:var(--txt3);text-align:center;padding:10px">Замеры ещё не добавлены</div>';return;}
+  el.innerHTML=hist.slice(0,8).map(m=>`
+    <div class="meas-row">
+      <div class="meas-date">${m.date}</div>
+      <div class="meas-vals">
+        ${m.weight?`<div class="meas-val">${m.weight}<span>кг</span></div>`:''}
+        ${m.chest?`<div class="meas-val">${m.chest}<span>гр</span></div>`:''}
+        ${m.waist?`<div class="meas-val">${m.waist}<span>тал</span></div>`:''}
+        ${m.bicep?`<div class="meas-val">${m.bicep}<span>бц</span></div>`:''}
+      </div>
+    </div>`).join('');
+}
+function updateStats(){
+  const done=getDoneTrains();
+  const cnt=Object.keys(done).length;
+  const streak=getStreak();
+  const hist=LS('measures',[]);
+  const last=hist[0]||{};
+  ['streakNum','streakNumBig'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=streak;});
+  const dc=document.getElementById('doneCnt');if(dc)dc.textContent=cnt;
+  const pt=document.getElementById('psTrain');if(pt)pt.textContent=cnt;
+  const pw=document.getElementById('psWeight');if(pw)pw.textContent=last.weight||'—';
+  const pc=document.getElementById('psChest');if(pc)pc.textContent=last.chest||'—';
+  const pwa=document.getElementById('psWaist');if(pwa)pwa.textContent=last.waist||'—';
+  renderWeekBars(done);
+}
+
+function renderWeekBars(done){
+  const el=document.getElementById('weekBars');if(!el)return;
+  const weeks=[[1,7],[8,14],[15,21],[22,31]];
+  const lbls=['Нед 1','Нед 2','Нед 3','Нед 4'];
+  const maxT=5;
+  el.innerHTML=weeks.map((w,i)=>{
+    const trained=Array.from({length:w[1]-w[0]+1},(_,j)=>w[0]+j).filter(d=>getAllTrainDays().includes(d)&&done[d]).length;
+    const total=Array.from({length:w[1]-w[0]+1},(_,j)=>w[0]+j).filter(d=>getAllTrainDays().includes(d)).length||1;
+    const pct=Math.round(trained/total*100);
+    return`<div class="bar-wrap"><div class="bar${trained>0?' filled':''}" style="height:${Math.max(4,pct*0.8)}px"></div><div class="bar-lbl">${lbls[i]}<br>${trained}/${total}</div></div>`;
+  }).join('');
+}
+
+// ==================== RENDER STRIP ====================
+function renderStrip(){
+  const strip=document.getElementById('calStrip');if(!strip)return;
+  const done=getDoneTrains();
+  strip.innerHTML='';
+  for(let d=1;d<=31;d++){
+    const data=getDayData(d);
+    const isToday=IS_MAY&&d===TODAY_D.getDate();
+    const isPast=IS_MAY&&d<TODAY_D.getDate();
+    let cls='cday';
+    if(data.isTrain)cls+=' t';else if(data.shift==='Д')cls+=' d';else if(data.shift==='Н')cls+=' n';
+    if(d===cur)cls+=' sel';if(isToday)cls+=' tod';if(isPast)cls+=' past';
+    const doneInd=done[d]?'<div style="position:absolute;top:2px;right:2px;font-size:8px">✅</div>':'';
+    strip.innerHTML+=`<div class="${cls}" onclick="selectDay(${d})" style="position:relative">${doneInd}<div class="cday-dow">${getDOW(d)}</div><div class="cday-num">${d}</div><div class="cday-pip"></div></div>`;
+  }
+  setTimeout(()=>{const el=strip.children[cur-1];if(el)el.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});},60);
+}
+
+// ==================== RENDER DAY ====================
+function renderDay(d){
+  const data=getDayData(d);const dow=getDOW(d);const clr=getClr(d);
+  document.getElementById('navMid').textContent=d+' мая · '+dow;
+  document.getElementById('prevBtn').disabled=d<=1;
+  document.getElementById('nextBtn').disabled=d>=31;
+  const spl=data.shift==='Д'?'<span class="shift-pill sp-d">☀️ Дн.</span>':data.shift==='Н'?'<span class="shift-pill sp-n">🌙 Ночь</span>':'<span class="shift-pill sp-r">🏠 Вых</span>';
+
+  if(data.isTrain){
+    const wo=WORKOUTS_PLAN[data.w];
+    const exH=wo.map(name=>{
+      const ex=EX[name];if(!ex)return'';
+      const safeKey=name.replace(/[^a-z]/gi,'_');
+      const parseSets=s=>{const m=s.match(/(\d+)×/);return m?parseInt(m[1]):3;};
+      const totalSets=parseSets(ex.sets);
+      const stepsH=ex.steps.map((s,i)=>`<div class="step-row"><div class="step-n a">${i+1}</div><div class="step-t">${s}</div></div>`).join('');
+      const timerH=ex.isTimer?`<div class="timer-wrap"><div class="timer-display" id="tmr_${safeKey}">${Math.floor(ex.timerSec/60)}:${(ex.timerSec%60)<10?'0':''}${ex.timerSec%60}</div><div class="timer-sub">Таймер ${ex.timerSec} секунд</div><div class="timer-btns"><button class="t-btn t-start" id="tbtn_${safeKey}" onclick="startTimer(${ex.timerSec},'tmr_${safeKey}','tbtn_${safeKey}')">▶ Старт</button><button class="t-btn t-reset" onclick="clearInterval(timerInterval);timerRunning=false;document.getElementById('tmr_${safeKey}').textContent='${Math.floor(ex.timerSec/60)}:${(ex.timerSec%60)<10?'0':''}${ex.timerSec%60}';document.getElementById('tmr_${safeKey}').style.color='var(--grn)';document.getElementById('tbtn_${safeKey}').textContent='▶ Старт'">↺ Сброс</button></div></div>`:
+      `<div style="margin-top:8px;padding:6px 10px;background:rgba(79,142,247,.06);border-radius:8px;border:1px solid rgba(79,142,247,.1);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--acc)">⏱ Отдых между подходами</span><div class="rest-disp" style="font-size:12px;font-weight:700;color:var(--txt3)">—</div><div class="rest-timer-wrap" style="margin:0"><button class="rt-btn" onclick="startRestTimer(60,'restw_${safeKey}')">1 мин</button><button class="rt-btn" onclick="startRestTimer(90,'restw_${safeKey}')">1:30</button><button class="rt-btn" onclick="startRestTimer(120,'restw_${safeKey}')">2 мин</button></div></div><div id="restw_${safeKey}" style="display:none"></div>`;
+      const realTimerH=ex.isTimer?timerH:`<div id="restw_${safeKey}" style="margin-top:8px;padding:8px 10px;background:rgba(79,142,247,.05);border-radius:8px;border:1px solid rgba(79,142,247,.1);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--acc)">⏱ Отдых</span><span class="rest-disp" style="font-size:12px;font-weight:700;color:var(--txt3)">—</span><button class="rt-btn" onclick="startRestTimer(60,'restw_${safeKey}')">1 мин</button><button class="rt-btn" onclick="startRestTimer(90,'restw_${safeKey}')">1:30</button><button class="rt-btn" onclick="startRestTimer(120,'restw_${safeKey}')">2 мин</button></div>`;
+      const setsH=`<div class="sets-track"><div class="sets-track-top"><div class="sets-track-lbl">Отметь подходы</div><span id="psaved_${safeKey}" style="font-size:11px"></span></div><div class="sets-dots" id="dots_${safeKey}"></div><div class="prog-input" style="margin-top:8px"><input id="pinp_${safeKey}" type="text" placeholder="Результат (напр. 12, 10, 9 раз)..."><button class="save-btn" onclick="saveProgress('${name}')">Сохранить</button></div></div>`;
+      return`<div class="ex-item"><div class="ex-head" onclick="toggleEx(this)"><div class="ex-ico">${ex.ico}</div><div class="ex-name">${name}</div><div class="ex-sets">${ex.sets}</div><div class="ex-arr">▶</div></div><div class="ex-body"><div class="sub-lbl a">📋 Техника</div>${stepsH}<div class="ex-tip"><b>💡</b> ${ex.tip}</div>${ex.isTimer?`<div class="timer-wrap"><div class="timer-display" id="tmr_${safeKey}">${Math.floor(ex.timerSec/60)}:${(ex.timerSec%60)<10?'0':''}${ex.timerSec%60}</div><div class="timer-sub">Таймер</div><div class="timer-btns"><button class="t-btn t-start" id="tbtn_${safeKey}" onclick="startTimer(${ex.timerSec},'tmr_${safeKey}','tbtn_${safeKey}')">▶ Старт</button><button class="t-btn t-reset" onclick="clearInterval(timerInterval);timerRunning=false;document.getElementById('tmr_${safeKey}').textContent='${Math.floor(ex.timerSec/60)}:${(ex.timerSec%60)<10?'0':''}${ex.timerSec%60}';document.getElementById('tmr_${safeKey}').style.color='var(--grn)';document.getElementById('tbtn_${safeKey}').textContent='▶ Старт'">↺ Сброс</button></div></div>`:realTimerH}${setsH}</div></div>`;
+    }).join('');
+
+    const mH=MEALS.train.map(m=>mealCard(m)).join('');
+    document.getElementById('dayContent').innerHTML=`
+    <div class="card"><div class="card-head"><div class="day-big ${clr}">${d}</div><div class="head-info"><div class="head-dow">${dow}, ${d} мая</div><div class="head-title">${data.w}</div><div class="head-time">⏰ ${data.time}</div></div>${spl}</div>
+    <div class="sec"><div class="sec-lbl">Упражнения · тап = техника + трекер</div>${exH}</div></div>
+    <div class="card"><div class="sec"><div class="sec-lbl">🍽 Питание · ~2800 ккал · тап = рецепт</div>${mH}</div></div>`;
+    wo.forEach(name=>{const ex=EX[name];if(!ex)return;const sk=name.replace(/[^a-z]/gi,'_');const ps=ex.sets.match(/(\d+)×/);const ts=ps?parseInt(ps[1]):3;renderSetDots(name,ts);});
+  } else {
+    const isN=data.shift==='Н';
+    const meals=isN?MEALS.night:MEALS.rest;
+    const mH=meals.map(m=>mealCard(m)).join('');
+    document.getElementById('dayContent').innerHTML=`
+    <div class="card"><div class="card-head"><div class="day-big ${clr}">${d}</div><div class="head-info"><div class="head-dow">${dow}, ${d} мая</div><div class="head-title">${data.note||'Отдых'}</div></div>${spl}</div>
+    <div class="rest-center"><div class="rest-emo">${isN?'🌙':'🛌'}</div><div class="rest-ttl">${isN?'НОЧНАЯ СМЕНА':'ДЕНЬ ОТДЫХА'}</div><div class="rest-sub">${isN?'Поешь плотно до смены. Лёгкий перекус ночью. Сон — приоритет №1.':'Мышцы растут в отдыхе. Выспись и ешь по плану.'}</div></div></div>
+    <div class="card"><div class="sec"><div class="sec-lbl">🍽 Питание на день · тап = рецепт</div>${mH}</div></div>`;
+  }
+  setTimeout(updateTracker,100);
+}
+
+function mealCard(m){
+  const ingrH=m.ingr.map(it=>`<div class="ingr-row"><span class="ingr-name">${it.n}</span><div style="display:flex;gap:6px;align-items:center"><span class="ingr-qty">${it.q}</span>${it.p?`<span class="ingr-price">~${it.p} BYN</span>`:''}</div></div>`).join('');
+  const stepsH=m.steps.map((s,i)=>`<div class="cook-row"><div class="cook-n">${i+1}</div><div class="cook-t">${s}</div></div>`).join('');
+  const macroH=m.macro?`<div class="macro-row"><div class="mc mc-b">Б:${m.macro.b}г</div><div class="mc mc-j">Ж:${m.macro.j}г</div><div class="mc mc-u">У:${m.macro.u}г</div><div class="mc mc-k">${m.kcal} ккал</div></div>`:'';
+  const altH=m.alts&&m.alts.length?`<div class="meal-alts"><div class="alts-lbl">🔄 Варианты замены</div>${m.alts.map(a=>`<span class="alt-btn">${a}</span>`).join('')}</div>`:'';
+  return`<div class="meal-item"><div class="meal-head" onclick="toggleMeal(this)"><div class="meal-ico">${m.ico}</div><div class="meal-info"><div class="meal-time">${m.time}</div><div class="meal-name">${m.name}</div></div><div class="meal-right"><span class="meal-kcal">${m.kcal}</span>${m.price?`<span class="meal-price">~${m.price} BYN</span>`:''}<span class="meal-arr">▶</span></div></div><div class="meal-body"><div class="sub-lbl g" style="margin-top:12px">🛒 Ингредиенты</div>${ingrH}${macroH}<div class="sub-lbl o" style="margin-top:12px">👨‍🍳 Как готовить</div>${stepsH}${altH}</div></div>`;
+}
+
+// ==================== MONTH VIEW ====================
+function renderMonth(){
+  const done=getDoneTrains();
+  const el=document.getElementById('monthContent');if(!el)return;
+  const isToday=d=>IS_MAY&&d===TODAY_D.getDate();
+  el.innerHTML=Array.from({length:31},(_,i)=>i+1).map(d=>{
+    const data=getDayData(d);const dow=getDOW(d);const clr=getClr(d);
+    let cls='mlist-item';if(data.isTrain)cls+=' ist';if(isToday(d))cls+=' tod';
+    const badge=data.isTrain?`<span class="mlist-badge" style="background:var(--acc-d);color:var(--acc)">🏋 ТРЕН.</span>`:data.shift==='Н'?`<span class="mlist-badge" style="background:var(--pur-d);color:var(--pur)">🌙 НОЧЬ</span>`:data.shift==='Д'?`<span class="mlist-badge" style="background:var(--grn-d);color:var(--grn)">☀️ ДЕНЬ</span>`:`<span class="mlist-badge" style="background:var(--sur2);color:var(--txt3)">🏠 ОТДЫХ</span>`;
+    const doneInd=done[d]?'<span class="done-check">✅</span>':'';
+    return`<div class="${cls}" onclick="selectDay(${d});showScreen('day')"><div class="mlist-num ${clr}">${d}</div><div class="mlist-info"><div class="mlist-ttl">${dow} · ${data.isTrain?data.w:(data.note||'Отдых')}</div>${data.isTrain?`<div class="mlist-sub">⏰ ${data.time}</div>`:''}</div>${badge}${doneInd}</div>`;
+  }).join('');
+}
+
+// ==================== SHOPPING ====================
+let curWeek=0;
+const weekKeys=Object.keys(SHOP_WEEKS);
+function renderShopWeekSel(){
+  const el=document.getElementById('shopWeekSel');if(!el)return;
+  el.innerHTML=weekKeys.map((k,i)=>`<button class="week-btn${i===curWeek?' on':''}" onclick="selectWeek(${i})">${k}</button>`).join('');
+}
+function selectWeek(i){curWeek=i;renderShopWeekSel();renderShopList();}
+function renderShopList(){
+  const el=document.getElementById('shopContent');if(!el)return;
+  const week=SHOP_WEEKS[weekKeys[curWeek]];
+  const key='shop_checked_'+curWeek;
+  const checked=LS(key,[]);
+  let total=0;let html='';
+  Object.entries(week).forEach(([cat,items])=>{
+    html+=`<div class="shop-cat"><div class="shop-cat-title">${cat}</div>`;
+    items.forEach((item,i)=>{
+      const id=curWeek+'_'+cat+'_'+i;
+      const isCk=checked.includes(id);
+      const price=parseFloat(item.p)||0;
+      if(!isCk)total+=price;
+      html+=`<div class="shop-item${isCk?' checked':''}" onclick="toggleShop('${id}',${price})"><div class="shop-cb${isCk?' checked':''}">${isCk?'✓':''}</div><div class="shop-item-name">${item.n}</div><span class="shop-item-qty">${item.q}</span><span class="shop-item-price">~${item.p} BYN</span></div>`;
+    });
+    html+='</div>';
+  });
+  const days=weekKeys[curWeek].match(/\d+/g);
+  html+=`<div class="shop-total"><div class="shop-total-lbl">Осталось купить</div><div class="shop-total-val" id="shopTotal">${total.toFixed(2)} BYN</div></div>`;
+  html+=`<button onclick="clearShopChecks()" style="width:100%;margin-top:8px;padding:10px;background:var(--sur2);border:1px solid var(--bor);border-radius:9px;color:var(--txt3);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase">↺ Сбросить отметки</button>`;
+  el.innerHTML=html;
+}
+function toggleShop(id,price){
+  const key='shop_checked_'+curWeek;
+  const checked=LS(key,[]);
+  const idx=checked.indexOf(id);
+  if(idx>=0)checked.splice(idx,1);else checked.push(id);
+  LSset(key,checked);
+  renderShopList();
+}
+function clearShopChecks(){LSset('shop_checked_'+curWeek,[]);renderShopList();}
+
+// ==================== NAVIGATION ====================
+function toggleEx(head){const b=head.nextElementSibling;const a=head.querySelector('.ex-arr');b.classList.toggle('open');a.classList.toggle('open');}
+function toggleMeal(head){const b=head.nextElementSibling;const a=head.querySelector('.meal-arr');b.classList.toggle('open');a.classList.toggle('open');}
+function selectDay(d){cur=d;renderStrip();renderDay(d);}
+function go(delta){const n=cur+delta;if(n>=1&&n<=31)selectDay(n);}
+
+let curScreen='day';
+function showScreen(id){
+  curScreen=id;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  const sc=document.getElementById('scr-'+id);if(sc)sc.classList.add('on');
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  const nb=document.getElementById('nb-'+id);if(nb)nb.classList.add('on');
+  const hdr=document.getElementById('mainHeader');
+  if(hdr)hdr.style.display=(id==='day'||id==='month')?'block':'none';
+  if(id==='tracker'){updateTracker();renderFoodLog();}
+  if(id==='shop'){renderShopWeekSel();renderShopList();}
+  if(id==='progress'){renderMeasures();updateStats();}
+  if(id==='month'){renderMonth();}
+}
+
+// ==================== INIT ====================
+renderStrip();
+renderDay(cur);
+renderMonth();
+updateStats();
+</script>
+</body>
+</html>
