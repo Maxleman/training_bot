@@ -2,83 +2,89 @@ import os
 import json
 import logging
 from typing import Optional, Any
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from contextlib import contextmanager
+import databases
+import sqlalchemy
 
 logger = logging.getLogger(__name__)
-_raw_url = os.getenv("DATABASE_URL", "")
-# Render gives postgres://, psycopg2 needs postgresql://
-DATABASE_URL = _raw_url.replace("postgres://", "postgresql://", 1)
 
-def get_conn():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+_raw_url = os.getenv("DATABASE_URL", "")
+DATABASE_URL = _raw_url.replace("postgres://", "postgresql+asyncpg://", 1).replace("postgresql://", "postgresql+asyncpg://", 1)
+
+database = databases.Database(DATABASE_URL)
+
+metadata = sqlalchemy.MetaData()
+
+users_table = sqlalchemy.Table(
+    "users", metadata,
+    sqlalchemy.Column("user_id", sqlalchemy.BigInteger, primary_key=True),
+    sqlalchemy.Column("name", sqlalchemy.Text),
+    sqlalchemy.Column("created_at", sqlalchemy.DateTime(timezone=True), server_default=sqlalchemy.func.now()),
+)
+
+user_data_table = sqlalchemy.Table(
+    "user_data", metadata,
+    sqlalchemy.Column("user_id", sqlalchemy.BigInteger),
+    sqlalchemy.Column("key", sqlalchemy.Text),
+    sqlalchemy.Column("value", sqlalchemy.Text),
+    sqlalchemy.Column("updated_at", sqlalchemy.DateTime(timezone=True), server_default=sqlalchemy.func.now()),
+    sqlalchemy.PrimaryKeyConstraint("user_id", "key"),
+)
 
 async def init_db():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id     BIGINT PRIMARY KEY,
-                    name        TEXT,
-                    created_at  TIMESTAMPTZ DEFAULT NOW()
-                )
-            """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS user_data (
-                    user_id     BIGINT,
-                    key         TEXT,
-                    value       JSONB,
-                    updated_at  TIMESTAMPTZ DEFAULT NOW(),
-                    PRIMARY KEY (user_id, key)
-                )
-            """)
-        conn.commit()
+    await database.connect()
+    # Create tables using raw SQL
+    await database.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id     BIGINT PRIMARY KEY,
+            name        TEXT,
+            created_at  TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
+    await database.execute("""
+        CREATE TABLE IF NOT EXISTS user_data (
+            user_id     BIGINT,
+            key         TEXT,
+            value       TEXT,
+            updated_at  TIMESTAMPTZ DEFAULT NOW(),
+            PRIMARY KEY (user_id, key)
+        )
+    """)
     logger.info("DB tables ready")
 
 async def get_user(user_id: int, name: str = "") -> dict:
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
-            row = cur.fetchone()
-            if not row:
-                cur.execute(
-                    "INSERT INTO users (user_id, name) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                    (user_id, name)
-                )
-                conn.commit()
-                return {"user_id": user_id, "name": name}
-            return dict(row)
+    row = await database.fetch_one(
+        "SELECT * FROM users WHERE user_id = :uid", {"uid": user_id}
+    )
+    if not row:
+        await database.execute(
+            "INSERT INTO users (user_id, name) VALUES (:uid, :name) ON CONFLICT DO NOTHING",
+            {"uid": user_id, "name": name}
+        )
+        return {"user_id": user_id, "name": name}
+    return dict(row)
 
 async def get_all_users() -> list:
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT user_id FROM users")
-            return [r["user_id"] for r in cur.fetchall()]
+    rows = await database.fetch_all("SELECT user_id FROM users")
+    return [r["user_id"] for r in rows]
 
 async def save_user_data(user_id: int, key: str, value: Any):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO user_data (user_id, key, value, updated_at)
-                VALUES (%s, %s, %s::jsonb, NOW())
-                ON CONFLICT (user_id, key)
-                DO UPDATE SET value = %s::jsonb, updated_at = NOW()
-            """, (user_id, key, json.dumps(value), json.dumps(value)))
-        conn.commit()
+    val_str = json.dumps(value)
+    await database.execute("""
+        INSERT INTO user_data (user_id, key, value, updated_at)
+        VALUES (:uid, :key, :val, NOW())
+        ON CONFLICT (user_id, key)
+        DO UPDATE SET value = :val, updated_at = NOW()
+    """, {"uid": user_id, "key": key, "val": val_str})
 
 async def get_user_data(user_id: int, key: str) -> Optional[Any]:
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            if key == "all":
-                cur.execute(
-                    "SELECT key, value FROM user_data WHERE user_id = %s", (user_id,)
-                )
-                return {r["key"]: r["value"] for r in cur.fetchall()}
-            else:
-                cur.execute(
-                    "SELECT value FROM user_data WHERE user_id = %s AND key = %s",
-                    (user_id, key)
-                )
-                row = cur.fetchone()
-                return row["value"] if row else None
+    if key == "all":
+        rows = await database.fetch_all(
+            "SELECT key, value FROM user_data WHERE user_id = :uid", {"uid": user_id}
+        )
+        return {r["key"]: json.loads(r["value"]) for r in rows}
+    else:
+        row = await database.fetch_one(
+            "SELECT value FROM user_data WHERE user_id = :uid AND key = :key",
+            {"uid": user_id, "key": key}
+        )
+        return json.loads(row["value"]) if row else None
