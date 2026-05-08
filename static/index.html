@@ -2562,40 +2562,36 @@ async function calcShopItemKBZHU() {
     return;
   }
 
-  // Ask AI trainer to calculate
+  // Ask AI trainer to calculate using direct KBZHU endpoint
   try {
     const grams = parseGramsFromQty(qty) || 100;
-    const resp = await fetch('/api/ai-trainer', {
+    const resp = await fetch('/api/kbzhu', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        message: `Рассчитай КБЖУ для "${name}" ${grams}г. Используй инструмент search_product_kbzhu.`,
-        user_id: TG_USER_ID
-      })
+      body: JSON.stringify({ product: name, grams })
     });
     const data = await resp.json();
-    if (data.tool_results && data.tool_results.length > 0) {
-      const r = data.tool_results[0];
-      if (r.ui_action === 'show_kbzhu') {
-        if (resultEl) resultEl.innerHTML = `
-          <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${escapeHtml(r.dish)}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <span style="background:var(--org-d);color:var(--org);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">${r.total_kcal} ккал</span>
-            <span style="background:var(--acc-d);color:var(--acc);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Б:${r.protein}г</span>
-            <span style="background:var(--grn-d);color:var(--grn);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">Ж:${r.fat}г</span>
-            <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">У:${r.carbs}г</span>
-          </div>
-          <button onclick="addKBZHUToDiary(${r.total_kcal},${r.protein},${r.fat},${r.carbs},'${escapeHtml(name)}')"
-            style="width:100%;margin-top:8px;padding:6px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
-            + В дневник питания
-          </button>`;
-        handleToolResult(r);
-      }
+
+    if (data.kcal !== undefined) {
+      const kcal = data.kcal, b = data.protein, j = data.fat, u = data.carbs;
+      const source = data.source === 'ai' ? '🤖 ИИ' : '📚 База';
+      if (resultEl) resultEl.innerHTML = `
+        <div style="font-weight:800;font-size:13px;margin-bottom:6px">🧮 ${escapeHtml(name)} ${grams}г <span style="font-size:10px;color:var(--txt3);font-weight:600">${source}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="background:var(--org-d);color:var(--org);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">${kcal} ккал</span>
+          <span style="background:var(--acc-d);color:var(--acc);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Б: ${b}г</span>
+          <span style="background:var(--grn-d);color:var(--grn);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">Ж: ${j}г</span>
+          <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800">У: ${u}г</span>
+        </div>
+        <button onclick="addKBZHUToDiary(${kcal},${b},${j},${u},'${escapeHtml(name)} ${grams}г')"
+          style="width:100%;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          ＋ В дневник питания
+        </button>`;
     } else {
-      if (resultEl) resultEl.innerHTML = `<div style="color:var(--txt2);font-size:12px">${escapeHtml(data.reply || 'Не удалось найти КБЖУ')}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div style="color:var(--red);font-size:12px">⚠️ Не удалось определить КБЖУ для "${escapeHtml(name)}".<br>Попробуй другое название.</div>`;
     }
   } catch(e) {
-    if (resultEl) resultEl.innerHTML = '<div style="color:var(--red);font-size:12px">⚠️ Ошибка поиска</div>';
+    if (resultEl) resultEl.innerHTML = '<div style="color:var(--red);font-size:12px">⚠️ Ошибка соединения</div>';
   }
 }
 

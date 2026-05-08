@@ -972,6 +972,113 @@ async def test_ai():
     }
 
 
+# Simple KBZHU database (common products per 100g)
+KBZHU_DB = {
+    "курица": {"k":165,"b":31,"j":3.6,"u":0},
+    "куриная грудка": {"k":165,"b":31,"j":3.6,"u":0},
+    "куриное филе": {"k":165,"b":31,"j":3.6,"u":0},
+    "говядина": {"k":254,"b":26,"j":16,"u":0},
+    "свинина": {"k":297,"b":25,"j":21,"u":0},
+    "рыба": {"k":95,"b":18,"j":2,"u":0},
+    "хек": {"k":95,"b":18,"j":2,"u":0},
+    "минтай": {"k":92,"b":18,"j":1,"u":0},
+    "лосось": {"k":208,"b":25,"j":12,"u":0},
+    "тунец": {"k":96,"b":22,"j":1,"u":0},
+    "яйцо": {"k":157,"b":12.7,"j":11.5,"u":0.7},
+    "яйца": {"k":157,"b":12.7,"j":11.5,"u":0.7},
+    "творог": {"k":121,"b":17,"j":5,"u":2},
+    "молоко": {"k":52,"b":2.9,"j":2.5,"u":4.7},
+    "кефир": {"k":40,"b":3.2,"j":1,"u":4},
+    "сыр": {"k":350,"b":25,"j":27,"u":0},
+    "гречка": {"k":110,"b":4,"j":1,"u":21},
+    "рис": {"k":130,"b":2.7,"j":0.3,"u":28},
+    "овсянка": {"k":88,"b":3,"j":1.5,"u":15},
+    "паста": {"k":158,"b":5.5,"j":0.9,"u":31},
+    "картофель": {"k":82,"b":2,"j":0.1,"u":18},
+    "банан": {"k":89,"b":1.1,"j":0.3,"u":23},
+    "яблоко": {"k":52,"b":0.3,"j":0.2,"u":14},
+    "мёд": {"k":304,"b":0.3,"j":0,"u":82},
+    "орехи": {"k":650,"b":16,"j":62,"u":13},
+    "грецкие орехи": {"k":654,"b":15,"j":65,"u":7},
+    "арахисовая паста": {"k":588,"b":25,"j":50,"u":20},
+    "масло": {"k":884,"b":0,"j":100,"u":0},
+    "хлеб": {"k":247,"b":9,"j":3.5,"u":43},
+    "гейнер": {"k":380,"b":25,"j":4,"u":62},
+    "омлет": {"k":184,"b":13,"j":14,"u":2},
+    "перец": {"k":26,"b":1,"j":0.2,"u":6},
+    "помидор": {"k":18,"b":0.9,"j":0.2,"u":3.7},
+    "огурец": {"k":15,"b":0.7,"j":0.1,"u":3},
+    "морковь": {"k":35,"b":0.9,"j":0.2,"u":8},
+    "лук": {"k":40,"b":1.1,"j":0.1,"u":9},
+}
+
+@app.post("/api/kbzhu")
+async def get_kbzhu(request: Request):
+    """Fast KBZHU lookup — DB first, then AI"""
+    body = await request.json()
+    product = body.get("product", "").strip().lower()
+    grams = float(body.get("grams", 100))
+
+    # Search in local DB
+    found = None
+    for key, val in KBZHU_DB.items():
+        if key in product or product in key:
+            found = val
+            break
+
+    if found:
+        mult = grams / 100
+        return {
+            "kcal": round(found["k"] * mult),
+            "protein": round(found["b"] * mult, 1),
+            "fat": round(found["j"] * mult, 1),
+            "carbs": round(found["u"] * mult, 1),
+            "source": "db"
+        }
+
+    # Ask Groq with strict JSON response
+    if not GROQ_API_KEY:
+        return {"error": "not found"}
+
+    prompt = f"""Дай КБЖУ для "{product}" на 100г. Отвечай ТОЛЬКО JSON без текста:
+{{"kcal": число, "protein": число, "fat": число, "carbs": число}}
+Только цифры, без единиц измерения. Если не знаешь — используй ближайший аналог."""
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                GROQ_URL,
+                json={
+                    "model": GROQ_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.1,
+                    "max_tokens": 60,
+                },
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+            )
+            data = resp.json()
+
+        if resp.status_code == 200:
+            import json as json_mod, re
+            text = data["choices"][0]["message"]["content"].strip()
+            # Extract JSON from response
+            match = re.search(r'\{[^}]+\}', text)
+            if match:
+                vals = json_mod.loads(match.group())
+                mult = grams / 100
+                return {
+                    "kcal": round(float(vals.get("kcal", 0)) * mult),
+                    "protein": round(float(vals.get("protein", 0)) * mult, 1),
+                    "fat": round(float(vals.get("fat", 0)) * mult, 1),
+                    "carbs": round(float(vals.get("carbs", 0)) * mult, 1),
+                    "source": "ai"
+                }
+    except Exception as e:
+        logger.error(f"KBZHU AI error: {e}")
+
+    return {"error": "not found"}
+
+
 @app.get("/setup")
 async def setup_webhook():
     """Call this once to register the webhook with Telegram"""
