@@ -299,6 +299,27 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
 .done-check{font-size:16px;color:var(--grn)}
 
 .hidden{display:none!important}
+
+.ai-bubble{padding:10px 14px;border-radius:14px;margin-bottom:8px;max-width:88%;font-size:13px;line-height:1.5;font-weight:500;animation:fadeUp .2s ease}
+.ai-bubble.user{background:var(--acc);color:white;margin-left:auto;border-bottom-right-radius:4px}
+.ai-bubble.bot{background:var(--sur2);color:var(--txt);border:1px solid var(--bor);border-bottom-left-radius:4px}
+.ai-bubble.typing{color:var(--txt3);font-style:italic}
+.ai-input-row{display:flex;gap:8px;padding:12px 14px;background:var(--sur);border-top:1px solid var(--bor);position:sticky;bottom:80px}
+.ai-input{flex:1;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:12px;padding:10px 14px;color:var(--txt);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;outline:none;resize:none;max-height:100px}
+.ai-input:focus{border-color:var(--acc)}
+.ai-send{width:42px;height:42px;border-radius:12px;background:var(--acc);border:none;color:white;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.ai-send:disabled{opacity:.4;cursor:default}
+.ai-chip{display:inline-block;padding:6px 12px;border-radius:20px;background:var(--sur2);border:1px solid var(--bor2);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;margin:3px;transition:all .15s}
+.ai-chip:hover{border-color:var(--acc);color:var(--acc)}
+
+
+.chart-tab{
+  flex-shrink:0;padding:6px 12px;border-radius:8px;border:1.5px solid var(--bor2);
+  background:var(--sur2);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .15s;
+}
+.chart-tab.on{border-color:var(--acc);background:var(--acc-d);color:var(--acc)}
+
 .pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
 
 /* STREAK */
@@ -318,6 +339,44 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
 </style>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<!-- SCREEN: AI TRAINER -->
+<div class="screen" id="scr-ai" style="display:none">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:4px;color:var(--txt)">🤖 ИИ-ТРЕНЕР</div>
+  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:14px">Персональный тренер на базе Gemini AI</div>
+
+  <!-- Quick questions -->
+  <div class="card" style="margin-bottom:10px"><div class="sec" style="padding:12px 14px">
+    <div class="sec-lbl">💡 Быстрые вопросы</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0;margin:-3px">
+      <span class="ai-chip" onclick="askAI('Чем заменить подтягивания если нет турника?')">Нет турника →</span>
+      <span class="ai-chip" onclick="askAI('Что съесть перед ночной сменой?')">Еда перед ночной</span>
+      <span class="ai-chip" onclick="askAI('Сколько белка мне нужно в день для набора массы при весе 59 кг?')">Белок в день</span>
+      <span class="ai-chip" onclick="askAI('Болит запястье при отжиманиях, что делать?')">Болит запястье</span>
+      <span class="ai-chip" onclick="askAI('Как ускорить восстановление после тренировки?')">Восстановление</span>
+      <span class="ai-chip" onclick="askAI('Можно ли тренироваться после ночной смены?')">После ночной</span>
+      <span class="ai-chip" onclick="askAI('Как правильно принимать гейнер для набора массы?')">Гейнер</span>
+      <span class="ai-chip" onclick="askAI('Что делать если не растёт вес уже 2 недели?')">Вес стоит</span>
+    </div>
+  </div></div>
+
+  <!-- Chat -->
+  <div class="card">
+    <div id="aiMessages" style="padding:14px;min-height:200px;max-height:50vh;overflow-y:auto">
+      <div class="ai-bubble bot">
+        Привет, Максим! 💪 Я твой персональный тренер. Знаю твой план тренировок, питание и сменный график.<br><br>
+        Задавай любые вопросы — про упражнения, питание, восстановление или замены. Отвечу конкретно под твои цели.
+      </div>
+    </div>
+    <div class="ai-input-row" style="position:static;border-radius:0 0 16px 16px">
+      <textarea class="ai-input" id="aiInput" placeholder="Спроси что угодно..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button class="ai-send" id="aiSendBtn" onclick="sendAI()">↑</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Telegram Mini App integration ──────────────────────────────
 const tg = window.Telegram?.WebApp;
@@ -392,6 +451,7 @@ window.addEventListener('load', () => {
   <button class="nb" onclick="showScreen('tracker')" id="nb-tracker"><div class="nb-ico">💧</div>Трекер</button>
   <button class="nb" onclick="showScreen('shop')" id="nb-shop"><div class="nb-ico">🛒</div>Покупки</button>
   <button class="nb" onclick="showScreen('progress')" id="nb-prog"><div class="nb-ico">📈</div>Прогресс</button>
+  <button class="nb" onclick="showScreen('ai')" id="nb-ai"><div class="nb-ico">🤖</div>Тренер</button>
 </nav>
 
 <!-- HEADER (shown on day/month) -->
@@ -514,8 +574,9 @@ window.addEventListener('load', () => {
 
 <!-- SCREEN: PROGRESS -->
 <div class="screen" id="scr-progress" style="display:none">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:14px;color:var(--txt)">📈 ПРОГРЕСС МАЯ</div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:14px;color:var(--txt)">📈 ПРОГРЕСС</div>
 
+  <!-- Streak + stats -->
   <div class="streak-bar">
     <div class="streak-fire">🔥</div>
     <div class="streak-info">
@@ -535,6 +596,34 @@ window.addEventListener('load', () => {
     <div class="pstat"><div class="pstat-num" id="psWaist" style="color:var(--org)">—</div><div class="pstat-lbl">Талия (см)</div></div>
   </div>
 
+  <!-- Chart tabs -->
+  <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">
+    <button class="chart-tab on" onclick="switchChart('weight')" id="ct-weight">⚖️ Вес</button>
+    <button class="chart-tab" onclick="switchChart('chest')" id="ct-chest">💪 Грудь</button>
+    <button class="chart-tab" onclick="switchChart('waist')" id="ct-waist">📏 Талия</button>
+    <button class="chart-tab" onclick="switchChart('bicep')" id="ct-bicep">💪 Бицепс</button>
+    <button class="chart-tab" onclick="switchChart('trains')" id="ct-trains">🏋 Трен.</button>
+  </div>
+
+  <!-- SVG Chart -->
+  <div class="prog-chart" style="padding:16px;min-height:180px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="chart-title" id="chartTitle">⚖️ Динамика веса</div>
+      <div id="chartDelta" style="font-size:12px;font-weight:800"></div>
+    </div>
+    <svg id="mainChart" viewBox="0 0 320 120" style="width:100%;overflow:visible">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4f8ef7" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#4f8ef7" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <text id="chartEmpty" x="160" y="60" text-anchor="middle" fill="#4a5568" font-size="12" font-family="DM Sans">Добавь первые замеры ниже 👇</text>
+    </svg>
+    <div id="chartXLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--txt3);font-weight:700"></div>
+  </div>
+
+  <!-- Week bars -->
   <div class="prog-chart">
     <div class="chart-title">Тренировки по неделям</div>
     <div class="bars" id="weekBars"></div>
@@ -1148,12 +1237,261 @@ function showScreen(id){
   // init screens
   if(id==='tracker'){updateTracker();renderFoodLog();}
   if(id==='shop'){renderShopWeekSel();renderShopList();}
-  if(id==='progress'){renderMeasures();updateStats();}
+  if(id==='progress'){renderMeasures();updateStats();setTimeout(renderMainChart,50);}
   if(id==='month'){renderMonth();}
 }
 
 
-// ==================== FOOD DATABASE ====================
+
+
+// ==================== AI TRAINER ====================
+let aiHistory = [];
+let aiLoading = false;
+
+function askAI(question) {
+  const input = document.getElementById('aiInput');
+  if (input) input.value = question;
+  sendAI();
+}
+
+async function sendAI() {
+  if (aiLoading) return;
+  const input = document.getElementById('aiInput');
+  const btn = document.getElementById('aiSendBtn');
+  const msgs = document.getElementById('aiMessages');
+  if (!input || !msgs) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Add user bubble
+  aiHistory.push({role:'user', text});
+  msgs.innerHTML += `<div class="ai-bubble user">${escapeHtml(text)}</div>`;
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Typing indicator
+  const typingId = 'typing_' + Date.now();
+  msgs.innerHTML += `<div class="ai-bubble bot typing" id="${typingId}">⏳ Думаю...</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  aiLoading = true;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const resp = await fetch('/api/ai-trainer', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: text, history: aiHistory.slice(-6)})
+    });
+    const data = await resp.json();
+
+    // Remove typing
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+
+    const reply = data.reply || data.error || 'Ошибка ответа';
+    aiHistory.push({role:'assistant', text: reply});
+
+    // Format reply: bold **text**, newlines
+    const formatted = escapeHtml(reply)
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/\n/g, '<br>');
+    msgs.innerHTML += `<div class="ai-bubble bot">${formatted}</div>`;
+  } catch(e) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+    msgs.innerHTML += `<div class="ai-bubble bot" style="color:var(--red)">⚠️ Ошибка соединения. Попробуй ещё раз.</div>`;
+  }
+
+  aiLoading = false;
+  if (btn) { btn.disabled = false; btn.textContent = '↑'; }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ==================== CHARTS ======================
+let curChart = 'weight';
+
+const CHART_CFG = {
+  weight: {label:'⚖️ Динамика веса', key:'weight', unit:'кг', color:'#4f8ef7', grad:'#4f8ef7'},
+  chest:  {label:'💪 Обхват груди',   key:'chest',  unit:'см', color:'#9d7ff5', grad:'#9d7ff5'},
+  waist:  {label:'📏 Обхват талии',   key:'waist',  unit:'см', color:'#f5924f', grad:'#f5924f'},
+  bicep:  {label:'💪 Обхват бицепса', key:'bicep',  unit:'см', color:'#3dd68c', grad:'#3dd68c'},
+  trains: {label:'🏋 Тренировки',     key:'trains', unit:'',   color:'#f5c842', grad:'#f5c842'},
+};
+
+function switchChart(type) {
+  curChart = type;
+  document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('on'));
+  const btn = document.getElementById('ct-' + type);
+  if (btn) btn.classList.add('on');
+  renderMainChart();
+}
+
+function renderMainChart() {
+  const cfg = CHART_CFG[curChart];
+  const titleEl = document.getElementById('chartTitle');
+  const deltaEl = document.getElementById('chartDelta');
+  const labelsEl = document.getElementById('chartXLabels');
+  const svg = document.getElementById('mainChart');
+  if (!svg || !cfg) return;
+
+  if (titleEl) titleEl.textContent = cfg.label;
+
+  let points = [];
+  let labels = [];
+
+  if (curChart === 'trains') {
+    // weekly training counts
+    const done = getDoneTrains();
+    const weeks = [[1,7],[8,14],[15,21],[22,31]];
+    weeks.forEach((w, i) => {
+      const count = Array.from({length:w[1]-w[0]+1},(_,j)=>w[0]+j)
+        .filter(d => getAllTrainDays().includes(d) && done[d]).length;
+      points.push(count);
+      labels.push('Нед ' + (i+1));
+    });
+  } else {
+    const hist = LS('measures', []).slice().reverse(); // oldest first
+    hist.forEach(m => {
+      const val = parseFloat(m[cfg.key]);
+      if (val) {
+        points.push(val);
+        labels.push(m.date ? m.date.split('.').slice(0,2).join('.') : '');
+      }
+    });
+  }
+
+  // Clear SVG
+  while (svg.children.length > 1) svg.removeChild(svg.lastChild);
+  const emptyEl = document.getElementById('chartEmpty');
+
+  if (points.length < 2) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (deltaEl) deltaEl.textContent = '';
+    if (labelsEl) labelsEl.innerHTML = '';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const W = 320, H = 100, PAD = 10;
+  const minV = Math.min(...points);
+  const maxV = Math.max(...points);
+  const range = maxV - minV || 1;
+
+  const toX = i => PAD + (i / (points.length - 1)) * (W - PAD * 2);
+  const toY = v => H - PAD - ((v - minV) / range) * (H - PAD * 2);
+
+  // Grid lines
+  for (let i = 0; i <= 3; i++) {
+    const y = PAD + (i / 3) * (H - PAD * 2);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', PAD); line.setAttribute('x2', W - PAD);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#1e2330'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+    const val = maxV - (i / 3) * range;
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', PAD - 2); t.setAttribute('y', y + 3);
+    t.setAttribute('text-anchor', 'end'); t.setAttribute('fill', '#4a5568');
+    t.setAttribute('font-size', '8'); t.setAttribute('font-family', 'DM Sans');
+    t.textContent = val.toFixed(curChart === 'trains' ? 0 : 1);
+    svg.appendChild(t);
+  }
+
+  // Area fill
+  let areaPath = `M ${toX(0)} ${H - PAD}`;
+  areaPath += ` L ${toX(0)} ${toY(points[0])}`;
+  points.forEach((v, i) => { if (i > 0) areaPath += ` L ${toX(i)} ${toY(v)}`; });
+  areaPath += ` L ${toX(points.length-1)} ${H - PAD} Z`;
+
+  // Update gradient color
+  const grad = svg.querySelector('#chartGrad');
+  if (grad) {
+    grad.children[0].setAttribute('stop-color', cfg.color);
+    grad.children[1].setAttribute('stop-color', cfg.color);
+  }
+
+  const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  area.setAttribute('d', areaPath);
+  area.setAttribute('fill', 'url(#chartGrad)');
+  svg.appendChild(area);
+
+  // Line
+  let linePath = `M ${toX(0)} ${toY(points[0])}`;
+  points.forEach((v, i) => { if (i > 0) linePath += ` L ${toX(i)} ${toY(v)}`; });
+  const lineEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  lineEl.setAttribute('d', linePath);
+  lineEl.setAttribute('fill', 'none');
+  lineEl.setAttribute('stroke', cfg.color);
+  lineEl.setAttribute('stroke-width', '2.5');
+  lineEl.setAttribute('stroke-linecap', 'round');
+  lineEl.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(lineEl);
+
+  // Dots + value labels
+  points.forEach((v, i) => {
+    const cx = toX(i), cy = toY(v);
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy);
+    circle.setAttribute('r', '4');
+    circle.setAttribute('fill', cfg.color);
+    circle.setAttribute('stroke', '#0a0c10');
+    circle.setAttribute('stroke-width', '2');
+    svg.appendChild(circle);
+
+    // value label on last point
+    if (i === points.length - 1) {
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', cx); t.setAttribute('y', cy - 8);
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('fill', cfg.color);
+      t.setAttribute('font-size', '9'); t.setAttribute('font-weight', 'bold');
+      t.setAttribute('font-family', 'DM Sans');
+      t.textContent = v.toFixed(curChart === 'trains' ? 0 : 1) + cfg.unit;
+      svg.appendChild(t);
+    }
+  });
+
+  // Delta
+  const delta = points[points.length-1] - points[0];
+  const sign = delta >= 0 ? '+' : '';
+  const dColor = curChart === 'weight' ? (delta > 0 ? '#3dd68c' : '#f56060')
+               : curChart === 'waist'  ? (delta < 0 ? '#3dd68c' : '#f56060')
+               : (delta >= 0 ? '#3dd68c' : '#f56060');
+  if (deltaEl) {
+    deltaEl.textContent = sign + delta.toFixed(curChart === 'trains' ? 0 : 1) + cfg.unit;
+    deltaEl.style.color = dColor;
+  }
+
+  // X labels
+  if (labelsEl) {
+    const step = Math.max(1, Math.floor(labels.length / 4));
+    labelsEl.innerHTML = labels.map((l, i) =>
+      `<span style="opacity:${i % step === 0 || i === labels.length-1 ? 1 : 0}">${l}</span>`
+    ).join('');
+  }
+}
+
+// Override updateStats to also redraw chart
+const __origUpdateStats = updateStats;
+updateStats = function() {
+  __origUpdateStats();
+  renderMainChart();
+};
+
+// Override saveMeasures to also redraw chart
+const __origSaveMeasures = saveMeasures;
+saveMeasures = function() {
+  __origSaveMeasures();
+  renderMainChart();
+};
+
+// ==================== FOOD DATABASE ======================
 const FOOD_DB = [
   // Мясо и птица
   {n:'Куриная грудка (варёная)',k:165,b:31,j:3.6,u:0},

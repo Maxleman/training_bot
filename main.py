@@ -165,7 +165,8 @@ async def webhook(request: Request):
             f"🍽 Меню с рецептами и ценами в BYN\n"
             f"💧 Трекер воды и калорий\n"
             f"📈 Прогресс и замеры\n"
-            f"🔔 Уведомления в дни тренировок в 9:00\n\n"
+            f"🔔 Уведомления в дни тренировок в 9:00\n"
+            f"🤖 ИИ-тренер — отвечает на любые вопросы\n\n"
             f"Нажми кнопку ниже 👇",
             reply_markup=keyboard
         )
@@ -186,8 +187,29 @@ async def webhook(request: Request):
             "Каждый день тренировки в <b>9:00</b> по Минску я пришлю напоминание.\n\n"
             "Команды:\n"
             "/today — что сегодня\n"
+            "/ai — ИИ-тренер (задай любой вопрос)\n"
             "/stats — твоя статистика\n"
             "/start — главное меню"
+        )
+
+    elif text.startswith("/ai ") or text.startswith("/ask "):
+        question = text.split(" ", 1)[1] if " " in text else ""
+        if question:
+            await send_message(chat_id, "🤔 Думаю...")
+            await handle_ai_message(chat_id, question)
+        else:
+            await send_message(chat_id, "Напиши вопрос после команды, например:\n/ai чем заменить подтягивания?")
+
+    elif text == "/ai":
+        await send_message(
+            chat_id,
+            "🤖 <b>ИИ-тренер</b>\n\n"
+            "Задай любой вопрос про тренировки и питание:\n"
+            "/ai чем заменить подтягивания?\n"
+            "/ai что съесть перед ночной сменой?\n"
+            "/ai болит запястье — что делать?\n"
+            "/ai сколько белка мне нужно?\n\n"
+            "Или открой приложение — там есть чат с тренером 👇"
         )
 
     elif text == "/stats":
@@ -232,6 +254,119 @@ async def serve_app():
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "Training Bot API"}
+
+
+import re
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+
+SYSTEM_PROMPT = """Ты персональный тренер и диетолог Максима. Вот его данные:
+
+ПРОФИЛЬ:
+- Имя: Максим
+- Возраст: ~20-25 лет  
+- Вес: 58-59 кг, Рост: 176-178 см
+- Цель: набор мышечной массы, рельеф (грудь, руки, пресс, спина)
+- График: сменная работа (дневные и ночные смены)
+- Тренировки: дома (отжимания, подтягивания, рюкзак с книгами)
+- Скоро переходит в тренажёрный зал
+
+ПЛАН ТРЕНИРОВОК (май 2026, дома):
+- Грудь/Трицепс: отжимания классические 4×макс, узкий хват 3×10-12, с ногами на стуле 3×10, обратные от стула 3×12, планка 3×60с
+- Спина/Бицепс: подтягивания 4×макс, тяга рюкзака 4×12, сгибания на бицепс 4×12, гиперэкстензия 3×15, молотки 3×12
+- Плечи/Пресс: жим рюкзака 4×12, отжимания пайк 3×12, скручивания 3×20, подъём ног 3×15, боковая планка 3×30с, велосипед 3×20
+- Ноги/Плечи: приседания с рюкзаком 4×15, выпады 3×12, подъёмы на носки 3×20, прыжки squat 3×12
+
+ПИТАНИЕ:
+- Калории: ~2800 ккал/день (профицит для набора массы)
+- Белок: 120-130г, Жиры: 75-85г, Углеводы: 380-420г
+- Есть гейнер (принимает после тренировки)
+- Основные продукты: гречка, рис, курица, говядина, рыба, творог, яйца, овсянка
+
+ПРАВИЛА ОТВЕТОВ:
+- Отвечай коротко и по делу (3-6 предложений максимум)
+- Используй эмодзи умеренно
+- Давай конкретные советы, не общие фразы
+- Учитывай его сменный график при советах по питанию и восстановлению
+- Если спрашивает про упражнение — дай конкретную замену из его арсенала
+- Отвечай на русском языке
+- Обращайся по имени иногда, но не в каждом сообщении"""
+
+@app.post("/api/ai-trainer")
+async def ai_trainer(request: Request):
+    if not GEMINI_API_KEY:
+        return JSONResponse({"error": "GEMINI_API_KEY not configured"}, status_code=500)
+    
+    body = await request.json()
+    message = body.get("message", "").strip()
+    history = body.get("history", [])  # [{role, text}]
+    
+    if not message:
+        return JSONResponse({"error": "empty message"}, status_code=400)
+    
+    # Build conversation for Gemini
+    contents = []
+    
+    # Add history (last 6 messages for context)
+    for h in history[-6:]:
+        role = "user" if h.get("role") == "user" else "model"
+        contents.append({
+            "role": role,
+            "parts": [{"text": h.get("text", "")}]
+        })
+    
+    # Add current message
+    contents.append({
+        "role": "user",
+        "parts": [{"text": message}]
+    })
+    
+    payload = {
+        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 300,
+        }
+    }
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+            json=payload
+        )
+        data = resp.json()
+    
+    if resp.status_code != 200:
+        logger.error(f"Gemini error: {data}")
+        return JSONResponse({"error": "AI error", "detail": str(data)}, status_code=500)
+    
+    text = data["candidates"][0]["content"]["parts"][0]["text"]
+    return {"reply": text}
+
+# Handle AI questions via bot commands too
+async def handle_ai_message(chat_id: int, user_message: str):
+    """Process AI trainer request from Telegram bot"""
+    if not GEMINI_API_KEY:
+        await send_message(chat_id, "⚠️ ИИ-тренер не настроен. Добавь GEMINI_API_KEY в переменные.")
+        return
+    
+    payload = {
+        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": user_message}]}],
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 300}
+    }
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(f"{GEMINI_URL}?key={GEMINI_API_KEY}", json=payload)
+        data = resp.json()
+    
+    if resp.status_code == 200:
+        reply = data["candidates"][0]["content"]["parts"][0]["text"]
+        await send_message(chat_id, f"🤖 {reply}")
+    else:
+        await send_message(chat_id, "⚠️ Ошибка ИИ, попробуй позже.")
 
 
 @app.get("/setup")
