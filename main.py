@@ -259,7 +259,7 @@ async def root():
 import re
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 SYSTEM_PROMPT = """Ты персональный тренер и диетолог Максима. Вот его данные:
 
@@ -367,6 +367,32 @@ async def handle_ai_message(chat_id: int, user_message: str):
         await send_message(chat_id, f"🤖 {reply}")
     else:
         await send_message(chat_id, "⚠️ Ошибка ИИ, попробуй позже.")
+
+
+@app.get("/test-ai")
+async def test_ai():
+    """Test Gemini API connection"""
+    if not GEMINI_API_KEY:
+        return {"error": "GEMINI_API_KEY not set"}
+    
+    payload = {
+        "contents": [{"role": "user", "parts": [{"text": "скажи привет одним словом"}]}],
+        "generationConfig": {"maxOutputTokens": 50}
+    }
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+            json=payload
+        )
+        data = resp.json()
+    
+    return {
+        "status_code": resp.status_code,
+        "gemini_url": GEMINI_URL,
+        "key_prefix": GEMINI_API_KEY[:8] + "...",
+        "response": data
+    }
 
 
 @app.get("/setup")
