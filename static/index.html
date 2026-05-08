@@ -1419,7 +1419,116 @@ function showScreen(id){
 
 
 
-// ==================== SLEEP TRACKER ====================
+
+function handleToolResult(result) {
+  if (!result || !result.ui_action) return;
+
+  switch (result.ui_action) {
+
+    case 'add_to_diary': {
+      // Add to today's food log in localStorage
+      const item = result.item;
+      const k = getTodayKey() + '_foods';
+      const foods = LS(k, []);
+      foods.push({
+        n: item.name + ' ' + item.grams + 'г',
+        k: item.kcal, b: item.protein, j: item.fat, u: item.carbs
+      });
+      LSset(k, foods);
+      addKcal(item.kcal);
+      // Show toast
+      showToast('✅ ' + result.message, 'green');
+      // Refresh tracker if open
+      if (curScreen === 'tracker') { renderFoodLog(); updateTracker(); }
+      break;
+    }
+
+    case 'show_kbzhu': {
+      // Show KBZHU card in chat
+      const msgs = document.getElementById('aiMessages');
+      if (msgs) {
+        const breakdown = (result.breakdown || []).map(b => `<div style="font-size:11px;color:var(--txt3)">${escapeHtml(b)}</div>`).join('');
+        msgs.innerHTML += `
+          <div class="ai-bubble bot" style="border:1px solid rgba(79,142,247,.3)">
+            <div style="font-weight:800;margin-bottom:8px">🧮 ${escapeHtml(result.dish)}</div>
+            ${breakdown}
+            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+              <span style="background:var(--org-d);color:var(--org);padding:3px 9px;border-radius:6px;font-size:12px;font-weight:800">${result.total_kcal} ккал</span>
+              <span style="background:var(--acc-d);color:var(--acc);padding:3px 9px;border-radius:6px;font-size:12px;font-weight:800">Б: ${result.protein}г</span>
+              <span style="background:var(--grn-d);color:var(--grn);padding:3px 9px;border-radius:6px;font-size:12px;font-weight:800">Ж: ${result.fat}г</span>
+              <span style="background:rgba(245,200,66,.1);color:var(--yel);padding:3px 9px;border-radius:6px;font-size:12px;font-weight:800">У: ${result.carbs}г</span>
+            </div>
+            <button onclick="addKBZHUToDiary(${result.total_kcal},${result.protein},${result.fat},${result.carbs},'${escapeHtml(result.dish)}')"
+              style="width:100%;margin-top:8px;padding:7px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+              ＋ Добавить в дневник
+            </button>
+          </div>`;
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+      break;
+    }
+
+    case 'price_updated': {
+      // Save to custom prices in localStorage
+      const prices = LS('custom_prices', {});
+      prices[result.product.toLowerCase()] = {
+        name: result.product, price: result.price,
+        unit: result.unit, store: result.store,
+        updated: new Date().toLocaleDateString('ru')
+      };
+      LSset('custom_prices', prices);
+      showToast('💰 ' + result.message, 'yellow');
+      break;
+    }
+
+    case 'add_to_shop': {
+      // Add to shopping list in localStorage
+      const shop = LS('ai_shopping_list', []);
+      shop.push(result.item);
+      LSset('ai_shopping_list', shop);
+      showToast('🛒 ' + result.message, 'green');
+      break;
+    }
+
+    case 'add_to_menu': {
+      // Add to menu constructor in localStorage
+      const menuKey = 'menu_day_' + result.day;
+      const menu = LS(menuKey, {breakfast:[],snack1:[],lunch:[],preworkout:[],postworkout:[],dinner:[],sleep:[]});
+      const slot = result.slot || 'lunch';
+      if (!menu[slot]) menu[slot] = [];
+      menu[slot].push({n: result.dish, k: 0, b: 0, j: 0, u: 0});
+      LSset(menuKey, menu);
+      showToast('🍽 ' + result.message, 'purple');
+      if (curScreen === 'menu') { renderMenuSlots(); renderMenuTotals(); }
+      break;
+    }
+  }
+}
+
+function addKBZHUToDiary(kcal, protein, fat, carbs, name) {
+  const k = getTodayKey() + '_foods';
+  const foods = LS(k, []);
+  foods.push({n: name, k: kcal, b: protein, j: fat, u: carbs});
+  LSset(k, foods);
+  addKcal(kcal);
+  showToast('✅ Добавлено в дневник!', 'green');
+  if (curScreen === 'tracker') { renderFoodLog(); updateTracker(); }
+}
+
+function showToast(msg, color='green') {
+  const colorMap = {green:'var(--grn)', yellow:'var(--yel)', purple:'var(--pur)', red:'var(--red)'};
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--sur2);border:1.5px solid ${colorMap[color]||colorMap.green};
+    color:${colorMap[color]||colorMap.green};padding:10px 18px;border-radius:12px;
+    font-size:13px;font-weight:700;z-index:9999;white-space:nowrap;
+    animation:fadeUp .3s ease;font-family:'DM Sans',sans-serif`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ==================== SLEEP TRACKER ======================
 const SLEEP_GOAL = 8; // hours
 
 function getSleepKey(day) { return 'sleep_day_' + day; }
@@ -1940,6 +2049,13 @@ async function sendAI() {
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\n/g, '<br>');
     msgs.innerHTML += `<div class="ai-bubble bot">${formatted}</div>`;
+
+    // Handle tool results — update UI automatically
+    if (data.tool_results && data.tool_results.length > 0) {
+      for (const result of data.tool_results) {
+        handleToolResult(result);
+      }
+    }
   } catch(e) {
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();

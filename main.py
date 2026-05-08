@@ -426,6 +426,240 @@ BASE_SYSTEM_PROMPT = """Ты — персональный тренер, диет
 - Грецкие орехи 200г: 5-7 BYN"""
 
 
+# ==================== AI TOOLS (Function Calling) ====================
+AI_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "add_food_to_diary",
+            "description": "Добавляет блюдо или продукт в дневник питания пользователя на сегодня с рассчитанным КБЖУ",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Название блюда или продукта"},
+                    "grams": {"type": "number", "description": "Количество в граммах"},
+                    "kcal": {"type": "number", "description": "Калории на указанное количество"},
+                    "protein": {"type": "number", "description": "Белки в граммах"},
+                    "fat": {"type": "number", "description": "Жиры в граммах"},
+                    "carbs": {"type": "number", "description": "Углеводы в граммах"},
+                    "meal_slot": {"type": "string", "description": "Приём пищи: breakfast, snack1, lunch, preworkout, postworkout, dinner, sleep"}
+                },
+                "required": ["name", "grams", "kcal", "protein", "fat", "carbs"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calculate_kbzhu",
+            "description": "Рассчитывает КБЖУ для блюда по ингредиентам и возвращает результат",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dish_name": {"type": "string", "description": "Название блюда"},
+                    "ingredients": {
+                        "type": "array",
+                        "description": "Список ингредиентов",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "grams": {"type": "number"},
+                                "kcal_per_100g": {"type": "number"},
+                                "protein_per_100g": {"type": "number"},
+                                "fat_per_100g": {"type": "number"},
+                                "carbs_per_100g": {"type": "number"}
+                            },
+                            "required": ["name", "grams", "kcal_per_100g"]
+                        }
+                    }
+                },
+                "required": ["dish_name", "ingredients"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_product_price",
+            "description": "Обновляет цену продукта в базе цен Минска",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_name": {"type": "string", "description": "Название продукта"},
+                    "price_byn": {"type": "number", "description": "Новая цена в BYN"},
+                    "unit": {"type": "string", "description": "Единица измерения: кг, шт, л, 200г и т.д."},
+                    "store": {"type": "string", "description": "Магазин: Евроопт, Виталюр, Гиппо, Корона или другой"}
+                },
+                "required": ["product_name", "price_byn", "unit"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_to_shopping_list",
+            "description": "Добавляет продукт в список покупок",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_name": {"type": "string", "description": "Название продукта"},
+                    "quantity": {"type": "string", "description": "Количество (500г, 1кг, 2шт и т.д.)"},
+                    "price_byn": {"type": "number", "description": "Примерная цена в BYN"},
+                    "category": {"type": "string", "description": "Категория: Мясо и рыба, Молочное, Крупы и макароны, Овощи и фрукты, Прочее"}
+                },
+                "required": ["product_name", "quantity"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_to_menu",
+            "description": "Добавляет блюдо в конструктор меню на конкретный день",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "day": {"type": "integer", "description": "День мая (1-31)"},
+                    "meal_slot": {"type": "string", "description": "Слот: breakfast, snack1, lunch, preworkout, postworkout, dinner, sleep"},
+                    "dish_name": {"type": "string", "description": "Название блюда"},
+                    "kcal": {"type": "number", "description": "Калории"},
+                    "protein": {"type": "number", "description": "Белки г"},
+                    "fat": {"type": "number", "description": "Жиры г"},
+                    "carbs": {"type": "number", "description": "Углеводы г"}
+                },
+                "required": ["meal_slot", "dish_name", "kcal", "protein", "fat", "carbs"]
+            }
+        }
+    }
+]
+
+async def execute_tool(tool_name: str, args: dict, user_id: int = None) -> dict:
+    """Execute a tool call and return result + UI action"""
+    from datetime import date, timezone, timedelta
+
+    if tool_name == "calculate_kbzhu":
+        ingredients = args.get("ingredients", [])
+        total = {"kcal": 0, "protein": 0, "fat": 0, "carbs": 0, "grams": 0}
+        breakdown = []
+        for ing in ingredients:
+            g = ing.get("grams", 0)
+            mult = g / 100
+            k = round(ing.get("kcal_per_100g", 0) * mult, 1)
+            p = round(ing.get("protein_per_100g", 0) * mult, 1)
+            f = round(ing.get("fat_per_100g", 0) * mult, 1)
+            c = round(ing.get("carbs_per_100g", 0) * mult, 1)
+            total["kcal"] += k; total["protein"] += p
+            total["fat"] += f; total["carbs"] += c; total["grams"] += g
+            breakdown.append(f"{ing['name']} {g}г → {k} ккал")
+        return {
+            "success": True,
+            "dish": args.get("dish_name"),
+            "total_kcal": round(total["kcal"]),
+            "protein": round(total["protein"], 1),
+            "fat": round(total["fat"], 1),
+            "carbs": round(total["carbs"], 1),
+            "total_grams": round(total["grams"]),
+            "breakdown": breakdown,
+            "ui_action": "show_kbzhu",
+        }
+
+    elif tool_name == "add_food_to_diary":
+        # Save to user data for frontend to pick up
+        if user_id:
+            utc_now = datetime.now(timezone.utc)
+            minsk = utc_now + timedelta(hours=3)
+            day = minsk.day
+            today_key = f"day_{day}_" + date.today().strftime("%a %b %d %Y") + "_foods"
+            from database import get_user_data, save_user_data
+            foods = await get_user_data(user_id, today_key) or []
+            foods.append({
+                "n": f"{args['name']} {args['grams']}г",
+                "k": args["kcal"], "b": args["protein"],
+                "j": args["fat"], "u": args["carbs"]
+            })
+            await save_user_data(user_id, today_key, foods)
+        return {
+            "success": True,
+            "ui_action": "add_to_diary",
+            "item": args,
+            "message": f"Добавлено в дневник: {args['name']} {args['grams']}г — {args['kcal']} ккал"
+        }
+
+    elif tool_name == "update_product_price":
+        if user_id:
+            from database import get_user_data, save_user_data
+            prices = await get_user_data(user_id, "custom_prices") or {}
+            key = args["product_name"].lower()
+            prices[key] = {
+                "name": args["product_name"],
+                "price": args["price_byn"],
+                "unit": args.get("unit", "кг"),
+                "store": args.get("store", "не указан"),
+                "updated": datetime.now().strftime("%d.%m %H:%M")
+            }
+            await save_user_data(user_id, "custom_prices", prices)
+        return {
+            "success": True,
+            "ui_action": "price_updated",
+            "product": args["product_name"],
+            "price": args["price_byn"],
+            "unit": args.get("unit"),
+            "store": args.get("store", ""),
+            "message": f"Цена обновлена: {args['product_name']} — {args['price_byn']} BYN/{args.get('unit','кг')}"
+        }
+
+    elif tool_name == "add_to_shopping_list":
+        if user_id:
+            from database import get_user_data, save_user_data
+            shop = await get_user_data(user_id, "ai_shopping_list") or []
+            shop.append({
+                "name": args["product_name"],
+                "qty": args["quantity"],
+                "price": args.get("price_byn", 0),
+                "category": args.get("category", "Прочее"),
+                "added": datetime.now().strftime("%d.%m")
+            })
+            await save_user_data(user_id, "ai_shopping_list", shop)
+        return {
+            "success": True,
+            "ui_action": "add_to_shop",
+            "item": args,
+            "message": f"Добавлено в список покупок: {args['product_name']} {args['quantity']}"
+        }
+
+    elif tool_name == "add_to_menu":
+        utc_now = datetime.now(timezone.utc)
+        minsk = utc_now + timedelta(hours=3)
+        day = args.get("day", minsk.day)
+        if user_id:
+            from database import get_user_data, save_user_data
+            menu_key = f"menu_day_{day}"
+            menu = await get_user_data(user_id, menu_key) or {
+                "breakfast":[],"snack1":[],"lunch":[],"preworkout":[],
+                "postworkout":[],"dinner":[],"sleep":[]
+            }
+            slot = args.get("meal_slot", "lunch")
+            if slot not in menu:
+                menu[slot] = []
+            menu[slot].append({
+                "n": args["dish_name"],
+                "k": args["kcal"], "b": args["protein"],
+                "j": args["fat"], "u": args["carbs"]
+            })
+            await save_user_data(user_id, menu_key, menu)
+        return {
+            "success": True,
+            "ui_action": "add_to_menu",
+            "day": day,
+            "slot": args.get("meal_slot"),
+            "dish": args["dish_name"],
+            "message": f"Добавлено в меню {day} мая: {args['dish_name']} — {args['kcal']} ккал"
+        }
+
+    return {"success": False, "message": "Неизвестный инструмент"}
+
+
 async def build_system_prompt(user_id: int = None) -> str:
     """Build personalized system prompt with user's actual data"""
     from datetime import timezone, timedelta
@@ -506,7 +740,7 @@ async def ai_trainer(request: Request):
 
     uid = int(user_id) if user_id else None
 
-    # 1. Load existing history BEFORE saving new message
+    # 1. Load history BEFORE saving new message
     if uid:
         db_history = await get_chat_history(uid)
         system_prompt = await build_system_prompt(uid)
@@ -514,32 +748,21 @@ async def ai_trainer(request: Request):
         db_history = body.get("history", [])
         system_prompt = await build_system_prompt()
 
-    # 2. Build messages: system + history + NEW message
+    # 2. Build messages
     messages = [{"role": "system", "content": system_prompt}]
-    for h in db_history[-14:]:  # last 14 for context
+    for h in db_history[-12:]:
         role = "user" if h.get("role") == "user" else "assistant"
         messages.append({"role": role, "content": h.get("text", "")})
     messages.append({"role": "user", "content": message})
 
-    # 3. Call Groq
-    # Check if question is about prices - add search context
-    price_keywords = ["цена", "цены", "сколько стоит", "стоимость", "купить", "дешевле", "магазин", "евроопт", "виталюр", "гиппо"]
-    needs_price_search = any(kw in message.lower() for kw in price_keywords)
-
-    if needs_price_search:
-        messages.insert(1, {
-            "role": "system",
-            "content": """ВАЖНО для этого вопроса: используй актуальные цены из системного промпта.
-Если спрашивают про конкретный продукт которого нет в списке — дай примерную цену на основе схожих продуктов.
-Всегда указывай магазин (Евроопт, Виталюр, Гиппо, Корона) и что цены могут меняться.
-Давай конкретные числа в BYN."""
-        })
-
+    # 3. First call WITH tools
     payload = {
         "model": GROQ_MODEL,
         "messages": messages,
+        "tools": AI_TOOLS,
+        "tool_choice": "auto",
         "temperature": 0.6,
-        "max_tokens": 600,
+        "max_tokens": 800,
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
@@ -553,14 +776,62 @@ async def ai_trainer(request: Request):
         logger.error(f"Groq error: {data}")
         return JSONResponse({"error": "AI error", "detail": str(data)}, status_code=500)
 
-    reply = data["choices"][0]["message"]["content"]
+    response_msg = data["choices"][0]["message"]
+    tool_calls = response_msg.get("tool_calls") or []
+    tool_results = []
 
-    # 4. Save BOTH messages to DB after successful response
+    # 4. Execute tool calls if any
+    if tool_calls:
+        import json as json_module
+        for tc in tool_calls:
+            fn_name = tc["function"]["name"]
+            try:
+                fn_args = json_module.loads(tc["function"]["arguments"])
+            except Exception:
+                fn_args = {}
+            logger.info(f"Tool call: {fn_name}({fn_args})")
+            result = await execute_tool(fn_name, fn_args, uid)
+            tool_results.append(result)
+
+        # 5. Second call with tool results for final reply
+        messages.append({"role": "assistant", "tool_calls": tool_calls, "content": response_msg.get("content") or ""})
+        for i, tc in enumerate(tool_calls):
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc["id"],
+                "content": str(tool_results[i].get("message", "OK"))
+            })
+
+        payload2 = {
+            "model": GROQ_MODEL,
+            "messages": messages,
+            "temperature": 0.6,
+            "max_tokens": 600,
+        }
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp2 = await client.post(
+                GROQ_URL, json=payload2,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+            )
+            data2 = resp2.json()
+
+        if resp2.status_code == 200:
+            reply = data2["choices"][0]["message"].get("content", "Готово!")
+        else:
+            reply = response_msg.get("content") or "Готово!"
+    else:
+        reply = response_msg.get("content", "")
+
+    # 6. Save to history
     if uid:
         await save_chat_message(uid, "user", message)
         await save_chat_message(uid, "assistant", reply)
 
-    return {"reply": reply}
+    return {
+        "reply": reply,
+        "tool_results": tool_results,
+        "tools_used": [tc["function"]["name"] for tc in tool_calls]
+    }
 
 
 @app.delete("/api/ai-trainer/{user_id}/history")
