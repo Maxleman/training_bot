@@ -1658,10 +1658,8 @@ function handleToolResult(result) {
     }
 
     case 'add_to_shop': {
-      // Add to MY shopping list directly
-      const myList = getMyShop ? getMyShop() : LS('my_shop_list', []);
       const item = result.item || {};
-      myList.push({
+      const newItem = {
         name: item.name || item.product_name || '?',
         qty: item.qty || item.quantity || '1 шт',
         price: parseFloat(item.price || item.price_byn || 0),
@@ -1669,15 +1667,12 @@ function handleToolResult(result) {
         checked: false,
         id: Date.now(),
         added: new Date().toLocaleDateString('ru')
-      });
-      if (typeof saveMyShop === 'function') saveMyShop(myList);
-      else LSset('my_shop_list', myList);
-      // Also update ai_shopping_list for the card display
-      const aiList = LS('ai_shopping_list', []);
-      aiList.push(item);
-      LSset('ai_shopping_list', aiList);
-      showToast('🛒 ' + result.message, 'green');
-      if (curScreen === 'shop') renderMyShop();
+      };
+      const myList = getMyShop();
+      myList.push(newItem);
+      saveMyShop(myList);
+      showToast('🛒 ' + (result.message || 'Добавлено в список покупок'), 'green');
+      if (curScreen === 'shop') setTimeout(renderMyShop, 100);
       break;
     }
 
@@ -1994,6 +1989,7 @@ function quickAddToShop(name, qty) {
   });
   saveMyShop(list);
   showToast('🛒 Добавлено в покупки: ' + name, 'green');
+  if (curScreen === 'shop') setTimeout(renderMyShop, 100);
 }
 
 function addToFridgeFromSearch(name, qty) {
@@ -2525,11 +2521,11 @@ async function sendAI() {
   try {
     const body = {message: text};
     if (TG_USER_ID) body.user_id = TG_USER_ID;
-    // Include fridge contents in context
-    const fridge = getFridge ? getFridge() : [];
-    if (fridge.length > 0) {
-      body.fridge_context = fridge.map(i => i.name + (i.qty ? ' '+i.qty : '')).join(', ');
-    }
+    // Always send fridge status to AI
+    const fridge = typeof getFridge === 'function' ? getFridge() : [];
+    body.fridge_context = fridge.length > 0
+      ? fridge.map(i => i.name + (i.qty ? ' ('+i.qty+')' : '')).join(', ')
+      : '';  // empty string = AI will know fridge is empty
 
     const resp = await fetch('/api/ai-trainer', {
       method: 'POST',
