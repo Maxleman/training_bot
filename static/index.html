@@ -414,12 +414,12 @@ window.addEventListener('load', () => {
 </div>
 
 <!-- SCREEN: MONTH -->
-<div class="screen hidden" id="scr-month">
+<div class="screen" id="scr-month" style="display:none">
   <div id="monthContent"></div>
 </div>
 
 <!-- SCREEN: TRACKER -->
-<div class="screen hidden" id="scr-tracker">
+<div class="screen" id="scr-tracker" style="display:none">
   <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:14px;color:var(--txt)">💧 ТРЕКЕР ДНЯ</div>
 
   <!-- Water -->
@@ -471,7 +471,7 @@ window.addEventListener('load', () => {
 </div>
 
 <!-- SCREEN: SHOP -->
-<div class="screen hidden" id="scr-shop">
+<div class="screen" id="scr-shop" style="display:none">
   <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:4px;color:var(--txt)">🛒 СПИСОК ПОКУПОК</div>
   <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:12px">Цены — Минск, май 2026</div>
   <div class="shop-week-sel" id="shopWeekSel"></div>
@@ -479,7 +479,7 @@ window.addEventListener('load', () => {
 </div>
 
 <!-- SCREEN: PROGRESS -->
-<div class="screen hidden" id="scr-progress">
+<div class="screen" id="scr-progress" style="display:none">
   <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:14px;color:var(--txt)">📈 ПРОГРЕСС МАЯ</div>
 
   <div class="streak-bar">
@@ -1097,12 +1097,21 @@ function go(delta){const n=cur+delta;if(n>=1&&n<=31)selectDay(n);}
 let curScreen='day';
 function showScreen(id){
   curScreen=id;
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
-  const sc=document.getElementById('scr-'+id);if(sc)sc.classList.add('on');
+  // hide all screens
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.remove('on');
+    s.style.display='none';
+  });
+  // show target
+  const sc=document.getElementById('scr-'+id);
+  if(sc){sc.classList.add('on');sc.style.display='block';}
+  // update nav
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   const nb=document.getElementById('nb-'+id);if(nb)nb.classList.add('on');
+  // header only on day/month
   const hdr=document.getElementById('mainHeader');
   if(hdr)hdr.style.display=(id==='day'||id==='month')?'block':'none';
+  // init screens
   if(id==='tracker'){updateTracker();renderFoodLog();}
   if(id==='shop'){renderShopWeekSel();renderShopList();}
   if(id==='progress'){renderMeasures();updateStats();}

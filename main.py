@@ -228,4 +228,44 @@ async def serve_app():
 async def root():
     return {"status": "ok", "service": "Training Bot API"}
 
+
+@app.get("/setup")
+async def setup_webhook():
+    """Call this once to register the webhook with Telegram"""
+    if not BOT_TOKEN or not WEBHOOK_URL:
+        return {"error": "BOT_TOKEN or WEBHOOK_URL not set in environment variables"}
+    async with httpx.AsyncClient() as client:
+        # Delete old webhook first
+        await client.post(f"{TELEGRAM_API}/deleteWebhook")
+        # Set new webhook
+        resp = await client.post(
+            f"{TELEGRAM_API}/setWebhook",
+            json={
+                "url": f"{WEBHOOK_URL}/webhook",
+                "allowed_updates": ["message", "callback_query"]
+            }
+        )
+        data = resp.json()
+        return {
+            "webhook_set": data,
+            "webhook_url": f"{WEBHOOK_URL}/webhook",
+            "bot_token_set": bool(BOT_TOKEN),
+        }
+
+@app.get("/status")
+async def status():
+    """Check if everything is configured"""
+    result = {
+        "server": "ok",
+        "bot_token": "set" if BOT_TOKEN else "MISSING - add BOT_TOKEN in Railway Variables",
+        "webhook_url": WEBHOOK_URL or "MISSING - add WEBHOOK_URL in Railway Variables",
+    }
+    if BOT_TOKEN:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(f"{TELEGRAM_API}/getWebhookInfo")
+            wh = r.json().get("result", {})
+            result["webhook_registered"] = wh.get("url", "not set")
+            result["pending_updates"] = wh.get("pending_update_count", 0)
+    return result
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
