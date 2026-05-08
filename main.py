@@ -787,6 +787,10 @@ async def build_system_prompt(user_id: int = None) -> str:
 
 Учитывай эти данные в каждом ответе про питание, восстановление и тренировки."""
 
+        # Add fridge from DB if available
+        fridge_db = ctx.get("fridge", "не заполнен")
+        if fridge_db and fridge_db != "не заполнен":
+            user_context += f"\nХолодильник: {fridge_db}"
         return base + today_context + user_context
     except Exception as e:
         logger.error(f"build_system_prompt error: {e}")
@@ -800,6 +804,7 @@ async def ai_trainer(request: Request):
     body = await request.json()
     message = body.get("message", "").strip()
     user_id = body.get("user_id")
+    fridge_context = body.get("fridge_context", "")
 
     if not message:
         return JSONResponse({"error": "empty message"}, status_code=400)
@@ -814,7 +819,9 @@ async def ai_trainer(request: Request):
         db_history = body.get("history", [])
         system_prompt = await build_system_prompt()
 
-    # 2. Build messages
+    # 2. Build messages — inject fridge if provided
+    if fridge_context:
+        system_prompt += f"\n\nСОДЕРЖИМОЕ ХОЛОДИЛЬНИКА СЕЙЧАС: {fridge_context}\nЕсли пользователь спрашивает что приготовить или что съесть — предлагай блюда из этих продуктов."
     messages = [{"role": "system", "content": system_prompt}]
     for h in db_history[-12:]:
         role = "user" if h.get("role") == "user" else "assistant"
@@ -829,6 +836,7 @@ async def ai_trainer(request: Request):
         "tool_choice": "auto",
         "temperature": 0.6,
         "max_tokens": 800,
+        "parallel_tool_calls": False,  # one tool at a time
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
@@ -839,9 +847,28 @@ async def ai_trainer(request: Request):
         data = resp.json()
 
     if resp.status_code != 200:
-        logger.error(f"Groq error: {data}")
-        return JSONResponse({"error": "AI error", "detail": str(data)}, status_code=500)
+        logger.error(f"Groq error (with tools): {data}")
+        # Fallback: retry WITHOUT tools
+        payload_fallback = {
+            "model": GROQ_MODEL,
+            "messages": messages,
+            "temperature": 0.6,
+            "max_tokens": 600,
+        }
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                GROQ_URL, json=payload_fallback,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+            )
+            data = resp.json()
+        if resp.status_code != 200:
+            logger.error(f"Groq fallback error: {data}")
+            err_msg = data.get("error", {}).get("message", "Ошибка ИИ") if isinstance(data.get("error"), dict) else str(data)
+            return JSONResponse({"error": err_msg}, status_code=500)
 
+    if not data.get("choices"):
+        logger.error(f"Groq no choices: {data}")
+        return JSONResponse({"error": data.get("error", {}).get("message", "Пустой ответ от ИИ")}, status_code=500)
     response_msg = data["choices"][0]["message"]
     tool_calls = response_msg.get("tool_calls") or []
     tool_results = []

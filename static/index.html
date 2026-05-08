@@ -300,6 +300,30 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
 
 .hidden{display:none!important}
 
+.fridge-item{display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--sur2);border-radius:11px;border:1px solid var(--bor);margin-bottom:6px;transition:all .15s}
+.fridge-item.expiring{border-color:var(--org)}
+.fridge-item.expired{border-color:var(--red);opacity:.7}
+.fridge-icon{width:32px;height:32px;border-radius:8px;background:var(--acc-d);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.fridge-info{flex:1;min-width:0}
+.fridge-name{font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fridge-meta{font-size:10px;color:var(--txt3);font-weight:600;margin-top:2px}
+.fridge-qty-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.fridge-qty{font-size:12px;font-weight:800;color:var(--txt2);background:var(--sur);border:1px solid var(--bor2);border-radius:6px;padding:3px 8px}
+.fridge-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0}
+.fridge-del:hover{color:var(--red)}
+.fridge-exp-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;flex-shrink:0}
+.fridge-exp-badge.ok{background:var(--grn-d);color:var(--grn)}
+.fridge-exp-badge.warn{background:var(--org-d);color:var(--org)}
+.fridge-exp-badge.bad{background:rgba(245,96,96,.1);color:var(--red)}
+.fridge-cat-row{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin:12px 0 6px;display:flex;align-items:center;gap:6px}
+.fridge-cat-line{flex:1;height:1px;background:var(--border)}
+.suggest-card{background:var(--sur2);border-radius:13px;border:1px solid var(--bor);margin-bottom:8px;overflow:hidden}
+.suggest-card-head{padding:12px 14px;border-bottom:1px solid var(--bor)}
+.suggest-dish-name{font-size:14px;font-weight:800;color:var(--txt)}
+.suggest-use{font-size:11px;color:var(--txt3);margin-top:3px}
+.suggest-macros{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+
+
 .my-shop-item{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--sur2);border-radius:10px;border:1px solid var(--bor);margin-bottom:6px;transition:all .15s}
 .my-shop-item.checked-item{opacity:.5}
 .my-shop-item.checked-item .my-shop-name{text-decoration:line-through}
@@ -557,6 +581,79 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
   </div></div>
 </div>
 
+<!-- SCREEN: FRIDGE -->
+<div class="screen" id="scr-fridge" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--txt)">🧊 МОЙ ХОЛОДИЛЬНИК</div>
+    <button onclick="askFridgeSuggest()" style="padding:6px 12px;background:var(--acc-d);border:1px solid var(--acc);border-radius:8px;color:var(--acc);font-size:11px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">🤖 Что приготовить?</button>
+  </div>
+  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:14px">ИИ-тренер видит содержимое и предлагает блюда</div>
+
+  <!-- Add product -->
+  <div class="card" style="margin-bottom:10px"><div class="sec">
+    <div class="sec-lbl">➕ Добавить продукт</div>
+    <div style="position:relative;margin-bottom:8px">
+      <input id="fridgeName" placeholder="Продукт (курица, творог, яйца...)"
+        style="width:100%;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:10px;padding:9px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;outline:none"
+        oninput="searchFridgeSuggest(this.value)">
+      <div id="fridgeSuggest" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:50;background:var(--sur2);border:1px solid var(--bor2);border-radius:10px;margin-top:3px;overflow:hidden;max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div>
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-bottom:4px">Количество</div>
+        <input id="fridgeQty" placeholder="500г, 1кг, 6шт..."
+          style="width:100%;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:9px;padding:8px 10px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-bottom:4px">Годен до</div>
+        <input id="fridgeExp" type="date"
+          style="width:100%;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:9px;padding:8px 10px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+    </div>
+    <div style="margin-bottom:8px">
+      <select id="fridgeCat" style="width:100%;background:var(--sur2);border:1.5px solid var(--bor2);border-radius:9px;padding:8px 10px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+        <option value="🥩 Мясо и рыба">🥩 Мясо и рыба</option>
+        <option value="🥛 Молочное">🥛 Молочное</option>
+        <option value="🥚 Яйца">🥚 Яйца</option>
+        <option value="🌾 Крупы">🌾 Крупы</option>
+        <option value="🥦 Овощи">🥦 Овощи</option>
+        <option value="🍎 Фрукты">🍎 Фрукты</option>
+        <option value="🧂 Специи и соусы">🧂 Специи и соусы</option>
+        <option value="📦 Прочее">📦 Прочее</option>
+      </select>
+    </div>
+    <button onclick="addFridgeItem()" style="width:100%;padding:10px;background:var(--acc);border:none;border-radius:10px;color:white;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase">＋ В холодильник</button>
+  </div></div>
+
+  <!-- Stats bar -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+    <div style="background:var(--sur);border-radius:11px;padding:10px;text-align:center;border:1px solid var(--bor)">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--acc)" id="fridgeCount">0</div>
+      <div style="font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase">Позиций</div>
+    </div>
+    <div style="background:var(--sur);border-radius:11px;padding:10px;text-align:center;border:1px solid var(--org-d);border-color:var(--org)">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--org)" id="fridgeExpiring">0</div>
+      <div style="font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase">Скоро истекут</div>
+    </div>
+    <div style="background:var(--sur);border-radius:11px;padding:10px;text-align:center;border:1px solid var(--bor)">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--grn)" id="fridgeFresh">0</div>
+      <div style="font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase">Свежих</div>
+    </div>
+  </div>
+
+  <!-- AI suggestions -->
+  <div id="fridgeSuggestions"></div>
+
+  <!-- Fridge contents -->
+  <div class="card"><div class="sec">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sec-lbl" style="margin:0">Содержимое</div>
+      <button onclick="clearExpired()" style="font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700">🗑 Удалить просроченные</button>
+    </div>
+    <div id="fridgeList"></div>
+  </div></div>
+</div>
+
 <script>
 // ── Telegram Mini App integration ──────────────────────────────
 const tg = window.Telegram?.WebApp;
@@ -634,6 +731,7 @@ window.addEventListener('load', () => {
   <button class="nb" onclick="showScreen('ai')" id="nb-ai"><div class="nb-ico">🤖</div>Тренер</button>
   <button class="nb" onclick="showScreen('menu')" id="nb-menu"><div class="nb-ico">🍽</div>Меню</button>
   <button class="nb" onclick="showScreen('sleep')" id="nb-sleep"><div class="nb-ico">😴</div>Сон</button>
+  <button class="nb" onclick="showScreen('fridge')" id="nb-fridge"><div class="nb-ico">🧊</div>Холод.</button>
 </nav>
 
 <!-- HEADER (shown on day/month) -->
@@ -1477,6 +1575,7 @@ function showScreen(id){
   if(id==='ai'){loadAIHistory();}
   if(id==='menu'){renderMenuDayTabs();renderMenuSlots();renderMenuTotals();}
   if(id==='sleep'){renderSleepScreen();}
+  if(id==='fridge'){renderFridge();}
   if(id==='month'){renderMonth();}
 }
 
@@ -1594,7 +1693,278 @@ function showToast(msg, color='green') {
   setTimeout(() => toast.remove(), 3000);
 }
 
-// ==================== SLEEP TRACKER ======================
+
+// ==================== FRIDGE ====================
+const FRIDGE_EMOJIS = {
+  'мясо':  '🥩','рыба': '🐟','курица': '🍗','говядина':'🥩','фарш':'🥩',
+  'творог':'🧀','молоко':'🥛','кефир':'🥛','яйцо':'🥚','яйца':'🥚','сыр':'🧀','йогурт':'🥛',
+  'гречка':'🌾','рис':'🌾','овсянка':'🌾','паста':'🍝','хлеб':'🍞',
+  'банан':'🍌','яблоко':'🍎','апельсин':'🍊',
+  'морковь':'🥕','помидор':'🍅','огурец':'🥒','перец':'🫑','лук':'🧅','картофель':'🥔',
+  'масло':'🫙','соус':'🧂','мёд':'🍯'
+};
+
+function getFridgeEmoji(name) {
+  const n = name.toLowerCase();
+  for (const [key, emoji] of Object.entries(FRIDGE_EMOJIS)) {
+    if (n.includes(key)) return emoji;
+  }
+  return '🧊';
+}
+
+function getFridge() { return LS('my_fridge', []); }
+function saveFridge(list) {
+  LSset('my_fridge', list);
+  if (typeof serverSave === 'function') serverSave('my_fridge', list);
+}
+
+function getExpStatus(expDate) {
+  if (!expDate) return {cls:'ok', label:'∞'};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp = new Date(expDate);
+  const diff = Math.round((exp - today) / 86400000);
+  if (diff < 0)  return {cls:'bad',  label:'Просрочен'};
+  if (diff === 0) return {cls:'warn', label:'Сегодня!'};
+  if (diff <= 2)  return {cls:'warn', label:`${diff}д`};
+  if (diff <= 5)  return {cls:'ok',   label:`${diff}д`};
+  return {cls:'ok', label:`${diff}д`};
+}
+
+function addFridgeItem() {
+  const nameEl = document.getElementById('fridgeName');
+  const qtyEl  = document.getElementById('fridgeQty');
+  const expEl  = document.getElementById('fridgeExp');
+  const catEl  = document.getElementById('fridgeCat');
+
+  const name = nameEl?.value.trim();
+  if (!name) { showToast('Введи название продукта', 'yellow'); return; }
+
+  const qty  = qtyEl?.value.trim() || '';
+  const exp  = expEl?.value || '';
+  const cat  = catEl?.value || '📦 Прочее';
+
+  const fridge = getFridge();
+
+  // Check if already exists — update qty instead
+  const existing = fridge.find(i => i.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    existing.qty = qty || existing.qty;
+    if (exp) existing.exp = exp;
+    saveFridge(fridge);
+    showToast('🔄 Обновлено: ' + name, 'green');
+  } else {
+    fridge.push({
+      id: Date.now(),
+      name, qty, exp, cat,
+      emoji: getFridgeEmoji(name),
+      added: new Date().toLocaleDateString('ru')
+    });
+    saveFridge(fridge);
+    showToast('✅ Добавлено: ' + name, 'green');
+  }
+
+  if (nameEl) nameEl.value = '';
+  if (qtyEl)  qtyEl.value  = '';
+  if (expEl)  expEl.value  = '';
+  document.getElementById('fridgeSuggest').style.display = 'none';
+  renderFridge();
+}
+
+function deleteFridgeItem(id) {
+  saveFridge(getFridge().filter(i => i.id !== id));
+  renderFridge();
+}
+
+function useFridgeItem(id) {
+  // Mark as used / decrease qty
+  const fridge = getFridge();
+  const item = fridge.find(i => i.id === id);
+  if (!item) return;
+  const used = prompt(`Сколько использовал ${item.name}? (текущее: ${item.qty || '—'})`);
+  if (used === null) return;
+  item.qty = used || '0';
+  if (!used || used === '0') {
+    // Move to shopping list suggestion
+    if (confirm(`${item.name} закончился. Добавить в список покупок?`)) {
+      const shop = getMyShop();
+      shop.push({ name: item.name, qty: '1 шт', price: 0, cat: 'Прочее', checked: false, id: Date.now(), added: new Date().toLocaleDateString('ru') });
+      saveMyShop(shop);
+      showToast('🛒 Добавлено в покупки: ' + item.name, 'green');
+    }
+    saveFridge(fridge.filter(i => i.id !== id));
+  } else {
+    saveFridge(fridge);
+  }
+  renderFridge();
+}
+
+function clearExpired() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const fresh = getFridge().filter(i => {
+    if (!i.exp) return true;
+    return new Date(i.exp) >= today;
+  });
+  saveFridge(fresh);
+  renderFridge();
+  showToast('🗑 Просроченные удалены', 'red');
+}
+
+function searchFridgeSuggest(query) {
+  const el = document.getElementById('fridgeSuggest');
+  if (!query || query.length < 2) { el.style.display='none'; return; }
+  const q = query.toLowerCase();
+  const fromDB = (typeof FOOD_DB !== 'undefined' ? FOOD_DB : [])
+    .filter(f => f.n.toLowerCase().includes(q));
+  const common = ['Куриная грудка','Говядина','Хек','Яйца','Творог 5%','Молоко','Гречка','Рис','Овсянка','Банан','Морковь','Лук','Помидоры','Огурцы','Перец болгарский','Сыр твёрдый','Кефир','Картофель'];
+  const fromCommon = common.filter(n => n.toLowerCase().includes(q)).map(n => ({n}));
+  const results = [...fromDB.slice(0,4), ...fromCommon.slice(0,4)]
+    .filter((f,i,arr) => arr.findIndex(x=>x.n===f.n)===i).slice(0,8);
+  if (!results.length) { el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = results.map(f => `
+    <div onclick="selectFridgeSuggest('${escapeHtml(f.n)}')"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bor);font-size:13px;font-weight:600"
+      onmouseover="this.style.background='rgba(79,142,247,.1)'" onmouseout="this.style.background=''">
+      ${getFridgeEmoji(f.n)} ${escapeHtml(f.n)}
+    </div>`).join('');
+}
+
+function selectFridgeSuggest(name) {
+  document.getElementById('fridgeName').value = name;
+  document.getElementById('fridgeSuggest').style.display='none';
+  // Auto select category
+  const cat = document.getElementById('fridgeCat');
+  if (cat) {
+    const n = name.toLowerCase();
+    if (/курица|говядина|рыба|хек|минтай|фарш|свинина/.test(n)) cat.value='🥩 Мясо и рыба';
+    else if (/творог|молоко|кефир|сыр|йогурт/.test(n)) cat.value='🥛 Молочное';
+    else if (/яйц/.test(n)) cat.value='🥚 Яйца';
+    else if (/гречка|рис|овсянка|паста|хлеб/.test(n)) cat.value='🌾 Крупы';
+    else if (/банан|яблоко|апельсин|груша/.test(n)) cat.value='🍎 Фрукты';
+    else if (/морковь|лук|помидор|огурец|перец|картофель/.test(n)) cat.value='🥦 Овощи';
+  }
+}
+
+function renderFridge() {
+  const fridge = getFridge();
+  const listEl = document.getElementById('fridgeList');
+  const countEl = document.getElementById('fridgeCount');
+  const expiringEl = document.getElementById('fridgeExpiring');
+  const freshEl = document.getElementById('fridgeFresh');
+
+  if (countEl) countEl.textContent = fridge.length;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let expiring = 0, fresh = 0;
+  fridge.forEach(item => {
+    if (!item.exp) { fresh++; return; }
+    const diff = Math.round((new Date(item.exp) - today) / 86400000);
+    if (diff >= 0 && diff <= 3) expiring++;
+    else if (diff > 3) fresh++;
+  });
+  if (expiringEl) expiringEl.textContent = expiring;
+  if (freshEl) freshEl.textContent = fresh;
+
+  if (!listEl) return;
+
+  if (!fridge.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;font-size:13px;color:var(--txt3)">🧊 Холодильник пуст.<br>Добавь продукты выше.</div>';
+    return;
+  }
+
+  // Group by category
+  const byCat = {};
+  fridge.forEach(item => {
+    const cat = item.cat || '📦 Прочее';
+    if (!byCat[cat]) byCat[cat] = [];
+    byCat[cat].push(item);
+  });
+
+  let out = '';
+  Object.entries(byCat).forEach(([cat, items]) => {
+    out += `<div class="fridge-cat-row">${cat}<div class="fridge-cat-line"></div></div>`;
+    items.forEach(item => {
+      const exp = getExpStatus(item.exp);
+      const itemCls = exp.cls === 'bad' ? ' expired' : exp.cls === 'warn' ? ' expiring' : '';
+      out += `
+      <div class="fridge-item${itemCls}">
+        <div class="fridge-icon">${item.emoji || getFridgeEmoji(item.name)}</div>
+        <div class="fridge-info">
+          <div class="fridge-name">${escapeHtml(item.name)}</div>
+          <div class="fridge-meta">${item.qty ? escapeHtml(item.qty) : ''}${item.added ? ' · добавлен '+item.added : ''}</div>
+        </div>
+        <div class="fridge-qty-wrap">
+          ${item.exp ? `<span class="fridge-exp-badge ${exp.cls}">${exp.label}</span>` : ''}
+          <button onclick="useFridgeItem(${item.id})" style="background:var(--grn-d);border:1px solid var(--grn);border-radius:6px;color:var(--grn);font-size:10px;font-weight:800;cursor:pointer;padding:3px 7px;font-family:'DM Sans',sans-serif">Исп.</button>
+          <button class="fridge-del" onclick="deleteFridgeItem(${item.id})">✕</button>
+        </div>
+      </div>`;
+    });
+  });
+
+  listEl.innerHTML = out;
+}
+
+async function askFridgeSuggest() {
+  const fridge = getFridge();
+  if (!fridge.length) { showToast('Сначала добавь продукты в холодильник!', 'yellow'); return; }
+
+  const sugEl = document.getElementById('fridgeSuggestions');
+  if (sugEl) sugEl.innerHTML = '<div class="card"><div class="sec"><div style="font-size:13px;color:var(--txt2)">⏳ Тренер думает что приготовить...</div></div></div>';
+
+  // Build fridge summary for AI
+  const fridgeList = fridge.map(i => `${i.name}${i.qty ? ' ('+i.qty+')' : ''}${i.exp ? ', годен до '+i.exp : ''}`).join(', ');
+
+  const today = new Date();
+  const dayOfWeek = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'][today.getDay()];
+  const dayNum = today.getDate();
+  const isTrain = !!TRAIN_DAYS[dayNum];
+
+  const prompt = `В моём холодильнике сейчас: ${fridgeList}.
+
+Сегодня ${dayOfWeek}, ${isTrain ? 'день тренировки (' + TRAIN_DAYS[dayNum] + ')' : 'день отдыха'}.
+
+Предложи 3 конкретных блюда которые можно приготовить из этих продуктов. Для каждого блюда:
+1. Название
+2. Какие продукты из холодильника использовать и сколько граммов
+3. Примерное КБЖУ
+4. Время приготовления
+
+Учитывай мою цель — набор мышечной массы, 2800 ккал/день.`;
+
+  try {
+    const resp = await fetch('/api/ai-trainer', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: prompt, user_id: TG_USER_ID })
+    });
+    const data = await resp.json();
+    const reply = data.reply || 'Не удалось получить предложения';
+
+    if (sugEl) {
+      const formatted = escapeHtml(reply)
+        .replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')
+        .replace(/\n/g,'<br>');
+      sugEl.innerHTML = `
+        <div class="card" style="margin-bottom:10px">
+          <div class="card-head" style="padding:12px 14px">
+            <div style="font-size:13px;font-weight:800">🤖 Что приготовить из твоего холодильника</div>
+          </div>
+          <div class="sec" style="font-size:13px;color:var(--txt2);line-height:1.7">${formatted}</div>
+        </div>`;
+    }
+  } catch(e) {
+    if (sugEl) sugEl.innerHTML = '<div style="font-size:12px;color:var(--red);padding:10px">⚠️ Ошибка соединения</div>';
+  }
+}
+
+// Close fridge suggest on outside click
+document.addEventListener('click', e => {
+  const s = document.getElementById('fridgeSuggest');
+  if (s && !s.contains(e.target) && e.target.id !== 'fridgeName') s.style.display='none';
+});
+
+// ==================== SLEEP TRACKER ========================
 const SLEEP_GOAL = 8; // hours
 
 function getSleepKey(day) { return 'sleep_day_' + day; }
@@ -2099,6 +2469,11 @@ async function sendAI() {
   try {
     const body = {message: text};
     if (TG_USER_ID) body.user_id = TG_USER_ID;
+    // Include fridge contents in context
+    const fridge = getFridge ? getFridge() : [];
+    if (fridge.length > 0) {
+      body.fridge_context = fridge.map(i => i.name + (i.qty ? ' '+i.qty : '')).join(', ');
+    }
 
     const resp = await fetch('/api/ai-trainer', {
       method: 'POST',
@@ -2110,7 +2485,7 @@ async function sendAI() {
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();
 
-    const reply = data.reply || data.error || 'Ошибка ответа';
+    const reply = data.reply || (data.error ? '⚠️ ' + data.error : 'Ошибка ответа');
     const formatted = escapeHtml(reply)
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\n/g, '<br>');
@@ -2422,43 +2797,35 @@ function renderMyShop() {
   if (!myEl) return;
 
   if (!list.length && !aiList.length) {
-    myEl.innerHTML = `<div style="text-align:center;padding:20px;font-size:13px;color:var(--txt3)">
+    if (myEl) myEl.innerHTML = `<div style="text-align:center;padding:20px;font-size:13px;color:var(--txt3)">
       📋 Список пуст.<br><br>Добавь товары вручную выше,<br>или напиши тренеру "добавь гречку в покупки" 🤖
     </div>`;
     if (totalEl) totalEl.style.display = 'none';
     return;
   }
-  if (!list.length) {
-    myEl.innerHTML = '';
-    if (totalEl) totalEl.style.display = 'none';
-    return;
-  }
 
-  // Group by category
-  const byCat = {};
-  list.forEach(item => {
-    if (!byCat[item.cat]) byCat[item.cat] = [];
-    byCat[item.cat].push(item);
-  });
-
-  let html = '';
+  // Render flat list (simpler, no grouping issues)
+  let listHtml = '';
   let total = 0;
-  Object.entries(byCat).forEach(([cat, items]) => {
-    html += `<div class="shop-cat-header">${cat}</div>`;
-    items.forEach(item => {
-      if (!item.checked) total += item.price || 0;
-      html += `
-        <div class="my-shop-item${item.checked ? ' checked-item' : ''}">
-          <div class="my-shop-cb${item.checked ? ' on' : ''}" onclick="toggleMyShopItem(${item.id})">${item.checked ? '✓' : ''}</div>
-          <div class="my-shop-name">${escapeHtml(item.name)}</div>
-          <div class="my-shop-qty">${escapeHtml(item.qty)}</div>
-          ${item.price ? `<div class="my-shop-price">${item.price.toFixed(2)} BYN</div>` : ''}
-          <button class="my-shop-del" onclick="deleteMyShopItem(${item.id})">✕</button>
-        </div>`;
-    });
+  list.forEach(item => {
+    const price = parseFloat(item.price) || 0;
+    if (!item.checked) total += price;
+    const itemId = item.id || Date.now();
+    listHtml += `<div class="my-shop-item${item.checked ? ' checked-item' : ''}" id="shopitem_${itemId}">
+      <div class="my-shop-cb${item.checked ? ' on' : ''}" onclick="toggleMyShopItem(${itemId})">${item.checked ? '✓' : ''}</div>
+      <div>
+        <div class="my-shop-name">${escapeHtml(item.name||'')}</div>
+        <div style="font-size:10px;color:var(--txt3);font-weight:600;margin-top:1px">${escapeHtml(item.cat||'')} · ${item.added||''}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <div class="my-shop-qty">${escapeHtml(item.qty||'')}</div>
+        ${price ? `<div class="my-shop-price">${price.toFixed(2)} BYN</div>` : ''}
+        <button class="my-shop-del" onclick="deleteMyShopItem(${itemId})">✕</button>
+      </div>
+    </div>`;
   });
 
-  myEl.innerHTML = html;
+  myEl.innerHTML = listHtml || '<div style="padding:12px;font-size:13px;color:var(--txt3)">Добавь первый товар выше 👆</div>';
   if (totalEl) totalEl.style.display = total > 0 ? 'block' : 'none';
   if (totalValEl) totalValEl.textContent = total.toFixed(2) + ' BYN';
 }
@@ -2492,8 +2859,13 @@ function searchShopSuggest(query) {
   const el = document.getElementById('shopSuggest');
   if (!query || query.length < 2) { el.style.display = 'none'; return; }
   const q = query.toLowerCase();
-  const results = (typeof FOOD_DB !== 'undefined' ? FOOD_DB : [])
-    .filter(f => f.n.toLowerCase().includes(q)).slice(0, 6);
+  const allItems = typeof FOOD_DB !== 'undefined' ? FOOD_DB : [];
+  // Also search my shop list items
+  const myItems = getMyShop().map(i => ({n: i.name, k: 0, b: 0, j: 0, u: 0}));
+  const combined = [...allItems, ...myItems];
+  const results = combined.filter((f,idx,arr) =>
+    f.n.toLowerCase().includes(q) && arr.findIndex(x=>x.n===f.n)===idx
+  ).slice(0, 8);
   if (!results.length) { el.style.display = 'none'; return; }
   el.style.display = 'block';
   el.innerHTML = results.map(f => `
