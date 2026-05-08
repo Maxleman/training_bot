@@ -442,24 +442,24 @@ async def ai_trainer(request: Request):
     if not message:
         return JSONResponse({"error": "empty message"}, status_code=400)
 
-    # Load history from DB if user_id provided, else use session history
-    if user_id:
-        db_history = await get_chat_history(int(user_id))
-        await save_chat_message(int(user_id), "user", message)
-        system_prompt = await build_system_prompt(int(user_id))
+    uid = int(user_id) if user_id else None
+
+    # 1. Load existing history BEFORE saving new message
+    if uid:
+        db_history = await get_chat_history(uid)
+        system_prompt = await build_system_prompt(uid)
     else:
         db_history = body.get("history", [])
         system_prompt = await build_system_prompt()
 
-    # Build messages: system + last 16 history messages + current
+    # 2. Build messages: system + history + NEW message
     messages = [{"role": "system", "content": system_prompt}]
-    for h in db_history[-16:]:
+    for h in db_history[-14:]:  # last 14 for context
         role = "user" if h.get("role") == "user" else "assistant"
         messages.append({"role": role, "content": h.get("text", "")})
-    # Current message already in history if user_id, don't double-add
-    if not user_id:
-        messages.append({"role": "user", "content": message})
+    messages.append({"role": "user", "content": message})
 
+    # 3. Call Groq
     payload = {
         "model": GROQ_MODEL,
         "messages": messages,
@@ -480,9 +480,10 @@ async def ai_trainer(request: Request):
 
     reply = data["choices"][0]["message"]["content"]
 
-    # Save reply to DB
-    if user_id:
-        await save_chat_message(int(user_id), "assistant", reply)
+    # 4. Save BOTH messages to DB after successful response
+    if uid:
+        await save_chat_message(uid, "user", message)
+        await save_chat_message(uid, "assistant", reply)
 
     return {"reply": reply}
 
