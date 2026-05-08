@@ -88,3 +88,41 @@ async def get_user_data(user_id: int, key: str) -> Optional[Any]:
             {"uid": user_id, "key": key}
         )
         return json.loads(row["value"]) if row else None
+
+
+async def save_chat_message(user_id: int, role: str, text: str):
+    """Save a single chat message to history"""
+    key = "chat_history"
+    history = await get_user_data(user_id, key) or []
+    history.append({
+        "role": role,
+        "text": text,
+        "ts": __import__('datetime').datetime.now().isoformat()
+    })
+    # Keep last 40 messages
+    if len(history) > 40:
+        history = history[-40:]
+    await save_user_data(user_id, key, history)
+
+async def get_chat_history(user_id: int) -> list:
+    """Get chat history for user"""
+    return await get_user_data(user_id, "chat_history") or []
+
+async def clear_chat_history(user_id: int):
+    """Clear chat history"""
+    await save_user_data(user_id, "chat_history", [])
+
+async def get_user_context(user_id: int) -> dict:
+    """Get all user data for AI context"""
+    all_data = await get_user_data(user_id, "all") or {}
+    measures = all_data.get("measures", [])
+    last = measures[0] if measures else {}
+    done = all_data.get("doneTrains", {})
+    return {
+        "weight": last.get("weight", "не указан"),
+        "chest": last.get("chest", "не указан"),
+        "waist": last.get("waist", "не указан"),
+        "bicep": last.get("bicep", "не указан"),
+        "done_trainings": len(done),
+        "last_measure_date": last.get("date", "нет замеров"),
+    }

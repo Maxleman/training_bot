@@ -300,6 +300,34 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
 
 .hidden{display:none!important}
 
+.meal-slot{background:var(--sur);border-radius:14px;border:1px solid var(--bor);margin-bottom:10px;overflow:hidden}
+.meal-slot-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--bor)}
+.meal-slot-title{font-size:13px;font-weight:800;color:var(--txt)}
+.meal-slot-kcal{font-size:11px;font-weight:800;color:var(--org);background:var(--org-d);padding:2px 8px;border-radius:6px}
+.meal-slot-body{padding:10px 14px}
+.dish-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bor)}
+.dish-row:last-child{border-bottom:none}
+.dish-name{flex:1;font-size:13px;font-weight:600;color:var(--txt)}
+.dish-macros{font-size:10px;color:var(--txt3);font-weight:600}
+.dish-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0}
+.dish-del:hover{color:var(--red)}
+.add-dish-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.dish-preset{display:inline-block;padding:5px 10px;border-radius:8px;background:var(--sur2);border:1px solid var(--bor2);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.dish-preset:hover{border-color:var(--grn);color:var(--grn)}
+.menu-day-tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;margin-bottom:12px}
+.menu-day-tabs::-webkit-scrollbar{display:none}
+.mday-tab{flex-shrink:0;padding:6px 12px;border-radius:8px;border:1.5px solid var(--bor2);background:var(--sur2);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.mday-tab.on{border-color:var(--grn);background:var(--grn-d);color:var(--grn)}
+.mday-tab.t{border-color:var(--acc)}
+.menu-totals{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.mtotal{background:var(--sur);border-radius:10px;padding:8px;text-align:center;border:1px solid var(--bor)}
+.mtotal-val{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1}
+.mtotal-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-top:1px}
+.menu-shop-btn{width:100%;padding:12px;background:var(--grn);border:none;border-radius:11px;color:white;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.custom-dish-form{background:var(--acc-d);border-radius:10px;padding:10px 12px;margin-top:8px;border:1px solid rgba(79,142,247,.2);display:none}
+.custom-dish-form.open{display:block}
+
+
 .ai-bubble{padding:10px 14px;border-radius:14px;margin-bottom:8px;max-width:88%;font-size:13px;line-height:1.5;font-weight:500;animation:fadeUp .2s ease}
 .ai-bubble.user{background:var(--acc);color:white;margin-left:auto;border-bottom-right-radius:4px}
 .ai-bubble.bot{background:var(--sur2);color:var(--txt);border:1px solid var(--bor);border-bottom-left-radius:4px}
@@ -342,8 +370,11 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
 
 <!-- SCREEN: AI TRAINER -->
 <div class="screen" id="scr-ai" style="display:none">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:4px;color:var(--txt)">🤖 ИИ-ТРЕНЕР</div>
-  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:14px">Персональный тренер на базе Gemini AI</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--txt)">🤖 ИИ-ТРЕНЕР</div>
+    <button onclick="clearAIHistory()" style="padding:5px 10px;border-radius:7px;border:1px solid var(--bor2);background:var(--sur2);color:var(--txt3);font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">🗑 Очистить</button>
+  </div>
+  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:14px">Помнит историю между сессиями · Groq Llama 3.3</div>
 
   <!-- Quick questions -->
   <div class="card" style="margin-bottom:10px"><div class="sec" style="padding:12px 14px">
@@ -375,6 +406,29 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-
       <button class="ai-send" id="aiSendBtn" onclick="sendAI()">↑</button>
     </div>
   </div>
+</div>
+
+<!-- SCREEN: MENU CONSTRUCTOR -->
+<div class="screen" id="scr-menu" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--txt)">🍽 МОЁ МЕНЮ</div>
+    <button onclick="generateShopList()" class="menu-shop-btn" style="width:auto;padding:6px 12px;font-size:11px;margin:0">🛒 Список покупок</button>
+  </div>
+  <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:12px">Составь меню на любой день мая</div>
+
+  <!-- Day selector -->
+  <div class="menu-day-tabs" id="menuDayTabs"></div>
+
+  <!-- Daily totals -->
+  <div class="menu-totals">
+    <div class="mtotal"><div class="mtotal-val" id="mTotKcal" style="color:var(--org)">0</div><div class="mtotal-lbl">ккал</div></div>
+    <div class="mtotal"><div class="mtotal-val" id="mTotB" style="color:var(--acc)">0</div><div class="mtotal-lbl">белки г</div></div>
+    <div class="mtotal"><div class="mtotal-val" id="mTotJ" style="color:var(--grn)">0</div><div class="mtotal-lbl">жиры г</div></div>
+    <div class="mtotal"><div class="mtotal-val" id="mTotU" style="color:var(--yel)">0</div><div class="mtotal-lbl">углев г</div></div>
+  </div>
+
+  <!-- Meal slots -->
+  <div id="menuSlots"></div>
 </div>
 
 <script>
@@ -452,6 +506,7 @@ window.addEventListener('load', () => {
   <button class="nb" onclick="showScreen('shop')" id="nb-shop"><div class="nb-ico">🛒</div>Покупки</button>
   <button class="nb" onclick="showScreen('progress')" id="nb-prog"><div class="nb-ico">📈</div>Прогресс</button>
   <button class="nb" onclick="showScreen('ai')" id="nb-ai"><div class="nb-ico">🤖</div>Тренер</button>
+  <button class="nb" onclick="showScreen('menu')" id="nb-menu"><div class="nb-ico">🍽</div>Меню</button>
 </nav>
 
 <!-- HEADER (shown on day/month) -->
@@ -1238,13 +1293,284 @@ function showScreen(id){
   if(id==='tracker'){updateTracker();renderFoodLog();}
   if(id==='shop'){renderShopWeekSel();renderShopList();}
   if(id==='progress'){renderMeasures();updateStats();setTimeout(renderMainChart,50);}
+  if(id==='ai'){loadAIHistory();}
+  if(id==='menu'){renderMenuDayTabs();renderMenuSlots();renderMenuTotals();}
   if(id==='month'){renderMonth();}
 }
 
 
 
 
-// ==================== AI TRAINER ====================
+
+// ==================== MENU CONSTRUCTOR ====================
+const MENU_SLOTS = [
+  {id:'breakfast', label:'🌅 Завтрак', time:'7:00–8:00'},
+  {id:'snack1',    label:'☕ Перекус 1', time:'10:30'},
+  {id:'lunch',     label:'🍽 Обед', time:'13:00–14:00'},
+  {id:'preworkout',label:'⚡ До тренировки', time:'за 1.5ч'},
+  {id:'postworkout',label:'🥤 После тренировки', time:'сразу'},
+  {id:'dinner',    label:'🌆 Ужин', time:'19:00–20:00'},
+  {id:'sleep',     label:'🌙 Перед сном', time:'22:00'},
+];
+
+const DISH_PRESETS = {
+  breakfast:[
+    {n:'Овсянка на молоке 80г',k:320,b:12,j:8,u:48},
+    {n:'Омлет 3 яйца',k:280,b:21,j:20,u:3},
+    {n:'Гречка 80г + молоко',k:290,b:11,j:4,u:54},
+    {n:'Творог 200г + мёд',k:220,b:24,j:5,u:20},
+    {n:'Яйца варёные 3шт',k:234,b:19,j:17,u:1},
+    {n:'Банан',k:89,b:1,j:0,u:23},
+    {n:'Грецкие орехи 25г',k:163,b:4,j:16,u:2},
+  ],
+  snack1:[
+    {n:'Творог 200г + ягоды',k:220,b:24,j:5,u:20},
+    {n:'Кефир 250мл',k:100,b:8,j:2,u:10},
+    {n:'Яблоко + 30г сыра',k:185,b:8,j:10,u:16},
+    {n:'Йогурт натуральный 200г',k:132,b:10,j:6,u:7},
+    {n:'Банан + орехи 20г',k:222,b:4,j:11,u:28},
+  ],
+  lunch:[
+    {n:'Гречка 80г + куриная грудка 200г',k:490,b:52,j:8,u:52},
+    {n:'Рис 80г + говядина 150г',k:520,b:38,j:12,u:58},
+    {n:'Паста 100г + фарш 150г',k:580,b:38,j:18,u:62},
+    {n:'Картофель 250г + рыба 200г',k:380,b:36,j:5,u:46},
+    {n:'Гречка 80г + говядина 150г',k:510,b:40,j:14,u:52},
+    {n:'Рис 80г + курица 200г + овощи',k:480,b:48,j:6,u:54},
+  ],
+  preworkout:[
+    {n:'Банан + хлеб цз + арахисовая паста',k:380,b:12,j:14,u:56},
+    {n:'Рис 100г + курица 100г',k:320,b:28,j:4,u:44},
+    {n:'Овсянка 50г + банан',k:280,b:8,j:4,u:54},
+    {n:'Творог 150г + мёд + банан',k:310,b:20,j:4,u:50},
+  ],
+  postworkout:[
+    {n:'Гейнер 1 порция на молоке',k:420,b:30,j:5,u:65},
+    {n:'Гейнер 0.5 порции + банан',k:260,b:17,j:3,u:44},
+    {n:'Творог 200г + банан',k:310,b:26,j:5,u:42},
+    {n:'Омлет 3 яйца + рис 100г',k:450,b:28,j:18,u:44},
+  ],
+  dinner:[
+    {n:'Хек 250г + картофель 300г',k:490,b:46,j:6,u:58},
+    {n:'Курица 200г + гречка 80г',k:480,b:50,j:8,u:52},
+    {n:'Говядина 150г + рис 80г',k:520,b:40,j:14,u:58},
+    {n:'Лосось 200г + овощи + рис 80г',k:560,b:44,j:18,u:50},
+    {n:'Фарш 150г + паста 80г',k:540,b:36,j:18,u:60},
+  ],
+  sleep:[
+    {n:'Творог 200г + орехи',k:285,b:26,j:13,u:8},
+    {n:'Кефир 250мл',k:100,b:8,j:2,u:10},
+    {n:'Творог 150г',k:182,b:20,j:7,u:5},
+    {n:'Казеин 1 мерная',k:120,b:24,j:1,u:3},
+  ],
+};
+
+let curMenuDay = new Date().getDate();
+if (curMenuDay < 1 || curMenuDay > 31) curMenuDay = 1;
+
+function getMenuKey(day) { return 'menu_day_' + day; }
+
+function getMenuData(day) {
+  return LS(getMenuKey(day), {
+    breakfast:[], snack1:[], lunch:[], preworkout:[], postworkout:[], dinner:[], sleep:[]
+  });
+}
+
+function saveMenuData(day, data) { LSset(getMenuKey(day), data); }
+
+function calcTotals(data) {
+  let k=0,b=0,j=0,u=0;
+  Object.values(data).forEach(dishes => {
+    dishes.forEach(d => { k+=d.k||0; b+=d.b||0; j+=d.j||0; u+=d.u||0; });
+  });
+  return {k:Math.round(k), b:parseFloat(b.toFixed(1)), j:parseFloat(j.toFixed(1)), u:parseFloat(u.toFixed(1))};
+}
+
+function renderMenuTotals() {
+  const data = getMenuData(curMenuDay);
+  const t = calcTotals(data);
+  const kEl=document.getElementById('mTotKcal');
+  const bEl=document.getElementById('mTotB');
+  const jEl=document.getElementById('mTotJ');
+  const uEl=document.getElementById('mTotU');
+  if(kEl)kEl.textContent=t.k;
+  if(bEl)bEl.textContent=t.b;
+  if(jEl)jEl.textContent=t.j;
+  if(uEl)uEl.textContent=t.u;
+  // Color kcal based on goal (2800)
+  if(kEl){
+    const pct = t.k / 2800;
+    kEl.style.color = pct < 0.7 ? 'var(--acc)' : pct < 0.9 ? 'var(--yel)' : pct <= 1.1 ? 'var(--grn)' : 'var(--red)';
+  }
+}
+
+function addDishToSlot(slotId, dish) {
+  const data = getMenuData(curMenuDay);
+  if (!data[slotId]) data[slotId] = [];
+  data[slotId].push({...dish});
+  saveMenuData(curMenuDay, data);
+  renderMenuSlots();
+  renderMenuTotals();
+}
+
+function removeDishFromSlot(slotId, idx) {
+  const data = getMenuData(curMenuDay);
+  if (data[slotId]) data[slotId].splice(idx, 1);
+  saveMenuData(curMenuDay, data);
+  renderMenuSlots();
+  renderMenuTotals();
+}
+
+function addCustomDish(slotId) {
+  const nameEl = document.getElementById('cd_name_' + slotId);
+  const kcalEl = document.getElementById('cd_kcal_' + slotId);
+  const bEl = document.getElementById('cd_b_' + slotId);
+  const jEl = document.getElementById('cd_j_' + slotId);
+  const uEl = document.getElementById('cd_u_' + slotId);
+  if (!nameEl || !nameEl.value.trim()) return;
+  const dish = {
+    n: nameEl.value.trim(),
+    k: parseFloat(kcalEl?.value)||0,
+    b: parseFloat(bEl?.value)||0,
+    j: parseFloat(jEl?.value)||0,
+    u: parseFloat(uEl?.value)||0,
+  };
+  addDishToSlot(slotId, dish);
+  [nameEl,kcalEl,bEl,jEl,uEl].forEach(el => { if(el) el.value=''; });
+  const form = document.getElementById('cdf_'+slotId);
+  if(form) form.classList.remove('open');
+}
+
+function renderMenuSlots() {
+  const container = document.getElementById('menuSlots');
+  if (!container) return;
+  const data = getMenuData(curMenuDay);
+  const isTrain = !!TRAIN_DAYS[curMenuDay];
+
+  container.innerHTML = MENU_SLOTS.map(slot => {
+    // Hide workout slots on non-training days
+    if ((slot.id === 'preworkout' || slot.id === 'postworkout') && !isTrain) return '';
+
+    const dishes = data[slot.id] || [];
+    const slotKcal = dishes.reduce((s,d)=>s+(d.k||0),0);
+
+    const dishesHtml = dishes.map((d,i) => `
+      <div class="dish-row">
+        <div class="dish-name">${escapeHtml(d.n)}</div>
+        <div class="dish-macros">${d.k}ккал · Б${d.b}·Ж${d.j}·У${d.u}</div>
+        <button class="dish-del" onclick="removeDishFromSlot('${slot.id}',${i})">✕</button>
+      </div>`).join('');
+
+    const presets = (DISH_PRESETS[slot.id] || []).map(p => `
+      <span class="dish-preset" onclick="addDishToSlot('${slot.id}',${JSON.stringify(p).replace(/'/g,"&#39;")})">${p.n}</span>`).join('');
+
+    return `
+    <div class="meal-slot">
+      <div class="meal-slot-head">
+        <div>
+          <div class="meal-slot-title">${slot.label}</div>
+          <div style="font-size:10px;color:var(--txt3);font-weight:600">${slot.time}</div>
+        </div>
+        ${slotKcal ? `<div class="meal-slot-kcal">${Math.round(slotKcal)} ккал</div>` : ''}
+      </div>
+      <div class="meal-slot-body">
+        ${dishesHtml}
+        <div class="add-dish-row">${presets}</div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button onclick="document.getElementById('cdf_${slot.id}').classList.toggle('open')"
+            style="flex:1;padding:6px;border-radius:8px;border:1px dashed var(--bor2);background:transparent;color:var(--txt3);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+            + своё блюдо
+          </button>
+          ${dishes.length ? `<button onclick="clearSlot('${slot.id}')" style="padding:6px 10px;border-radius:8px;border:1px solid var(--bor);background:transparent;color:var(--txt3);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif">Очистить</button>` : ''}
+        </div>
+        <div class="custom-dish-form" id="cdf_${slot.id}">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--acc);margin-bottom:8px">Своё блюдо</div>
+          <input id="cd_name_${slot.id}" placeholder="Название блюда" style="width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:8px;padding:7px 10px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:6px">
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input id="cd_kcal_${slot.id}" type="number" placeholder="ккал" style="flex:1;background:var(--sur2);border:1px solid var(--bor2);border-radius:8px;padding:7px 8px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+            <input id="cd_b_${slot.id}" type="number" placeholder="Б г" style="flex:1;background:var(--sur2);border:1px solid var(--bor2);border-radius:8px;padding:7px 8px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+            <input id="cd_j_${slot.id}" type="number" placeholder="Ж г" style="flex:1;background:var(--sur2);border:1px solid var(--bor2);border-radius:8px;padding:7px 8px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+            <input id="cd_u_${slot.id}" type="number" placeholder="У г" style="flex:1;background:var(--sur2);border:1px solid var(--bor2);border-radius:8px;padding:7px 8px;color:var(--txt);font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+          </div>
+          <button onclick="addCustomDish('${slot.id}')" style="width:100%;padding:8px;background:var(--acc);border:none;border-radius:8px;color:white;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Добавить</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearSlot(slotId) {
+  const data = getMenuData(curMenuDay);
+  data[slotId] = [];
+  saveMenuData(curMenuDay, data);
+  renderMenuSlots();
+  renderMenuTotals();
+}
+
+function renderMenuDayTabs() {
+  const el = document.getElementById('menuDayTabs');
+  if (!el) return;
+  el.innerHTML = Array.from({length:31},(_,i)=>i+1).map(d => {
+    const isTrain = !!TRAIN_DAYS[d];
+    const data = getMenuData(d);
+    const hasData = Object.values(data).some(arr => arr.length > 0);
+    let cls = 'mday-tab';
+    if (d === curMenuDay) cls += ' on';
+    else if (isTrain) cls += ' t';
+    return `<button class="${cls}" onclick="selectMenuDay(${d})">
+      ${d} ${getDOW(d)}${hasData ? ' ✓' : ''}${isTrain ? ' 🏋' : ''}
+    </button>`;
+  }).join('');
+}
+
+function selectMenuDay(d) {
+  curMenuDay = d;
+  renderMenuDayTabs();
+  renderMenuSlots();
+  renderMenuTotals();
+}
+
+function generateShopList() {
+  // Collect all dishes from all days and aggregate by ingredient
+  const allDishes = {};
+  for (let d = 1; d <= 31; d++) {
+    const data = getMenuData(d);
+    Object.values(data).forEach(dishes => {
+      dishes.forEach(dish => {
+        const key = dish.n;
+        if (!allDishes[key]) allDishes[key] = {n:dish.n, count:0};
+        allDishes[key].count++;
+      });
+    });
+  }
+  const items = Object.values(allDishes);
+  if (!items.length) {
+    alert('Сначала составь меню хотя бы на один день!');
+    return;
+  }
+
+  // Save to shopping list and switch screen
+  const shopData = {generated: true, items, date: new Date().toLocaleDateString('ru')};
+  LSset('generated_shoplist', shopData);
+  showScreen('shop');
+  // Show generated list
+  const el = document.getElementById('shopContent');
+  if (el) {
+    el.innerHTML = `
+      <div class="card"><div class="sec">
+        <div class="sec-lbl">🛒 Из конструктора меню · ${shopData.date}</div>
+        ${items.map(it => `
+          <div class="shop-item">
+            <div class="shop-cb"></div>
+            <div class="shop-item-name">${it.n}</div>
+            <div class="shop-item-qty">×${it.count}</div>
+          </div>`).join('')}
+      </div></div>
+      <button onclick="showScreen('shop')" style="width:100%;padding:10px;margin-top:4px;background:var(--sur2);border:1px solid var(--bor);border-radius:9px;color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">← Обычный список покупок</button>`;
+  }
+}
+
+// ==================== AI TRAINER ======================
 let aiHistory = [];
 let aiLoading = false;
 
@@ -1252,6 +1578,44 @@ function askAI(question) {
   const input = document.getElementById('aiInput');
   if (input) input.value = question;
   sendAI();
+}
+
+let aiHistoryLoaded = false;
+
+async function loadAIHistory() {
+  if (aiHistoryLoaded || !TG_USER_ID) return;
+  aiHistoryLoaded = true;
+  const msgs = document.getElementById('aiMessages');
+  if (!msgs) return;
+  try {
+    const resp = await fetch(`/api/ai-trainer/${TG_USER_ID}/history`);
+    const data = await resp.json();
+    const history = data.history || [];
+    if (history.length > 0) {
+      // Clear default greeting and show history (last 20)
+      msgs.innerHTML = '';
+      history.slice(-20).forEach(h => {
+        const cls = h.role === 'user' ? 'user' : 'bot';
+        const formatted = escapeHtml(h.text)
+          .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+          .replace(/\n/g, '<br>');
+        msgs.innerHTML += `<div class="ai-bubble ${cls}">${formatted}</div>`;
+      });
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  } catch(e) { console.warn('History load failed', e); }
+}
+
+async function clearAIHistory() {
+  if (!TG_USER_ID) return;
+  try {
+    await fetch(`/api/ai-trainer/${TG_USER_ID}/history`, {method:'DELETE'});
+    const msgs = document.getElementById('aiMessages');
+    if (msgs) msgs.innerHTML = `<div class="ai-bubble bot">
+      История очищена 🗑 Начнём заново! Задавай любые вопросы про тренировки и питание.
+    </div>`;
+    aiHistoryLoaded = false;
+  } catch(e) {}
 }
 
 async function sendAI() {
@@ -1264,13 +1628,10 @@ async function sendAI() {
   const text = input.value.trim();
   if (!text) return;
 
-  // Add user bubble
-  aiHistory.push({role:'user', text});
   msgs.innerHTML += `<div class="ai-bubble user">${escapeHtml(text)}</div>`;
   input.value = '';
   input.style.height = 'auto';
 
-  // Typing indicator
   const typingId = 'typing_' + Date.now();
   msgs.innerHTML += `<div class="ai-bubble bot typing" id="${typingId}">⏳ Думаю...</div>`;
   msgs.scrollTop = msgs.scrollHeight;
@@ -1279,21 +1640,20 @@ async function sendAI() {
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
 
   try {
+    const body = {message: text};
+    if (TG_USER_ID) body.user_id = TG_USER_ID;
+
     const resp = await fetch('/api/ai-trainer', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({message: text, history: aiHistory.slice(-6)})
+      body: JSON.stringify(body)
     });
     const data = await resp.json();
 
-    // Remove typing
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();
 
     const reply = data.reply || data.error || 'Ошибка ответа';
-    aiHistory.push({role:'assistant', text: reply});
-
-    // Format reply: bold **text**, newlines
     const formatted = escapeHtml(reply)
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\n/g, '<br>');

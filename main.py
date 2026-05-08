@@ -13,7 +13,7 @@ import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from database import init_db, get_user, save_user_data, get_user_data
+from database import init_db, get_user, save_user_data, get_user_data, save_chat_message, get_chat_history, clear_chat_history, get_user_context
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -262,7 +262,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
-SYSTEM_PROMPT = """Ты персональный тренер и диетолог Максима. Вот его данные:
+BASE_SYSTEM_PROMPT = """Ты персональный тренер и диетолог Максима. Вот его данные:
 
 ПРОФИЛЬ:
 - Имя: Максим
@@ -294,6 +294,29 @@ SYSTEM_PROMPT = """Ты персональный тренер и диетоло�
 - Отвечай на русском языке
 - Обращайся по имени иногда, но не в каждом сообщении"""
 
+
+async def build_system_prompt(user_id: int = None) -> str:
+    """Build personalized system prompt with user's actual data"""
+    base = BASE_SYSTEM_PROMPT
+    if not user_id:
+        return base
+    try:
+        ctx = await get_user_context(user_id)
+        extra = f"""
+
+АКТУАЛЬНЫЕ ДАННЫЕ МАКСИМА (из приложения):
+- Последний замер: {ctx['last_measure_date']}
+- Вес: {ctx['weight']} кг
+- Грудь: {ctx['chest']} см
+- Талия: {ctx['waist']} см
+- Бицепс: {ctx['bicep']} см
+- Тренировок выполнено в мае: {ctx['done_trainings']} из 18
+
+Используй эти данные когда отвечаешь на вопросы про прогресс."""
+        return base + extra
+    except:
+        return base
+
 @app.post("/api/ai-trainer")
 async def ai_trainer(request: Request):
     if not GROQ_API_KEY:
@@ -301,33 +324,40 @@ async def ai_trainer(request: Request):
 
     body = await request.json()
     message = body.get("message", "").strip()
-    history = body.get("history", [])
+    user_id = body.get("user_id")
 
     if not message:
         return JSONResponse({"error": "empty message"}, status_code=400)
 
-    # Build messages for Groq (OpenAI format)
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for h in history[-6:]:
+    # Load history from DB if user_id provided, else use session history
+    if user_id:
+        db_history = await get_chat_history(int(user_id))
+        await save_chat_message(int(user_id), "user", message)
+        system_prompt = await build_system_prompt(int(user_id))
+    else:
+        db_history = body.get("history", [])
+        system_prompt = await build_system_prompt()
+
+    # Build messages: system + last 16 history messages + current
+    messages = [{"role": "system", "content": system_prompt}]
+    for h in db_history[-16:]:
         role = "user" if h.get("role") == "user" else "assistant"
         messages.append({"role": role, "content": h.get("text", "")})
-    messages.append({"role": "user", "content": message})
+    # Current message already in history if user_id, don't double-add
+    if not user_id:
+        messages.append({"role": "user", "content": message})
 
     payload = {
         "model": GROQ_MODEL,
         "messages": messages,
         "temperature": 0.7,
-        "max_tokens": 400,
+        "max_tokens": 500,
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            GROQ_URL,
-            json=payload,
-            headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json"
-            }
+            GROQ_URL, json=payload,
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
         )
         data = resp.json()
 
@@ -335,8 +365,27 @@ async def ai_trainer(request: Request):
         logger.error(f"Groq error: {data}")
         return JSONResponse({"error": "AI error", "detail": str(data)}, status_code=500)
 
-    text = data["choices"][0]["message"]["content"]
-    return {"reply": text}
+    reply = data["choices"][0]["message"]["content"]
+
+    # Save reply to DB
+    if user_id:
+        await save_chat_message(int(user_id), "assistant", reply)
+
+    return {"reply": reply}
+
+
+@app.delete("/api/ai-trainer/{user_id}/history")
+async def clear_ai_history(user_id: int):
+    """Clear chat history for user"""
+    await clear_chat_history(user_id)
+    return {"ok": True}
+
+
+@app.get("/api/ai-trainer/{user_id}/history")
+async def get_ai_history(user_id: int):
+    """Get chat history for user"""
+    history = await get_chat_history(user_id)
+    return {"history": history}
 
 # Handle AI questions via bot commands too
 async def handle_ai_message(chat_id: int, user_message: str):
